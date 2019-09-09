@@ -97,7 +97,7 @@ func Init() {
 	for _, platform := range platformList {
 		handle := platform.Coin().Handle
 		apiKey := fmt.Sprintf("%s.api", handle)
-
+		fmt.Println(apiKey)
 		if !viper.IsSet(apiKey) {
 			continue
 		}

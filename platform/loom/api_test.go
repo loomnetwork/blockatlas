@@ -8,33 +8,23 @@ import (
 	"github.com/trustwallet/blockatlas"
 )
 
-const validatorSrc = `
-
-       [
-         {
-      "address": "0x77A71BbD8CAFf532eDe3f82D5518339d863e668e",
-      "jailed": false,
-      "name": "loomX",
-      "description": "test-trustwallet-endpoint",
-      "website": "loomX.io",
-      "delegationTotal": "739244394776671628451596",
-      "fee": "100"
+const validatorSrc = `[
+      {
+        "address": "0x67CD084888F817ae1F2e4f9b783c6Ae38883Fd51",
+        "name": "loomX",
+        "description": "test-trustwallet-endpoint",
+        "delegationTotal": "1107303053327166214720534"
       },
       {
-      "address": "0xa47bd25a56798cEEeDB2863F257d3bAfDCEe7c6F",
-      "jailed": false,
-      "name": "numero_dos",
-      "delegationTotal": "1450000362284418808473621",
-      "fee": "100"
+        "address": "0xeD8cc9d288d684A51D671cC85E80F0093BcfFCA1",
+        "delegationTotal": "1650000152682656494684657"
       },
       {
-      "address": "0x23efa4D4957735D1348A7CA1e80B55bF3181dfC6",
-      "jailed": false,
-      "delegationTotal": "1650000367199432869925070",
-      "fee": "100"
+        "address": "0x4b7bf93583Ba525f681cD394115B8E75f91fCD03",
+        "name": "numero_dos",
+        "delegationTotal": "1450000173769670699152977"
       }
-  ]
-
+    ]
 `
 
 func TestGetValidatorAPI(t *testing.T) {

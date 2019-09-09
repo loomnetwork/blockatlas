@@ -32,7 +32,7 @@ func NormalizeValidators(validators []Validator) (blockatlas.ValidatorPage, erro
 	results := make(blockatlas.ValidatorPage, 0)
 	for _, v := range validators {
 		validator := blockatlas.Validator{
-			Status: v.Jailed,
+			Status: !v.Jailed,
 			ID:     v.Address,
 			Reward: blockatlas.StakingReward{Annual: 20.00},
 		}
