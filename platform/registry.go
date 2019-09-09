@@ -3,7 +3,6 @@ package platform
 import (
 	"fmt"
 
-	"github.com/loomnetwork/blockatlas/platform/loom"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/trustwallet/blockatlas"
@@ -17,6 +16,7 @@ import (
 	"github.com/trustwallet/blockatlas/platform/fio"
 	"github.com/trustwallet/blockatlas/platform/icon"
 	"github.com/trustwallet/blockatlas/platform/iotex"
+	"github.com/trustwallet/blockatlas/platform/loom"
 	"github.com/trustwallet/blockatlas/platform/nebulas"
 	"github.com/trustwallet/blockatlas/platform/nimiq"
 	"github.com/trustwallet/blockatlas/platform/ontology"
