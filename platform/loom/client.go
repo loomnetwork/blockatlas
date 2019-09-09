@@ -2,7 +2,6 @@ package loom
 
 import (
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -28,12 +27,7 @@ func InitClient(URL string) Client {
 }
 
 func (c *Client) GetValidators() (validators []Validator, err error) {
-	query := url.Values{
-		"status": {"bonded"},
-		"page":   {strconv.FormatInt(1, 10)},
-		"limit":  {strconv.FormatInt(blockatlas.ValidatorsPerPage, 10)},
-	}
-	err = c.Request.Get(&validators, c.URL, "tw/staking/validators", query)
+	err = c.Request.Get(&validators, c.URL, "query/getvalidators", nil)
 	if err != nil {
 		logrus.WithError(err).Errorf("LOOM : Failed to get validators for address")
 		return validators, err
@@ -78,17 +72,18 @@ func (c *Client) GetBlockByNumber(num int64) (txs []Tx, err error) {
 	return txs, err
 }
 
-func (c *Client) GetTxsOfAddress(address string, tag string) (txs []Tx, err error) {
-	query := url.Values{
-		tag:     {address},
-		"page":  {strconv.FormatInt(1, 10)},
-		"limit": {strconv.FormatInt(1000, 10)},
-	}
+// TODO:
+// func (c *Client) GetTxsOfAddress(address string, tag string) (txs []Tx, err error) {
+// 	query := url.Values{
+// 		tag:     {address},
+// 		"page":  {strconv.FormatInt(1, 10)},
+// 		"limit": {strconv.FormatInt(1000, 10)},
+// 	}
 
-	err = c.Request.Get(&txs, c.URL, "txs", query)
-	if err != nil {
-		logrus.WithError(err).Errorf("LOOM: Failed to get transactions for address %s", address)
-		return nil, err
-	}
-	return txs, err
-}
+// 	err = c.Request.Get(&txs, c.URL, "txs", query)
+// 	if err != nil {
+// 		logrus.WithError(err).Errorf("LOOM: Failed to get transactions for address %s", address)
+// 		return nil, err
+// 	}
+// 	return txs, err
+// }

@@ -21,26 +21,23 @@ func (p *Platform) Coin() coin.Coin {
 }
 
 func (p *Platform) GetValidators() (blockatlas.ValidatorPage, error) {
-	results := make(blockatlas.ValidatorPage, 0)
 	validators, err := p.client.GetValidators()
 	if err != nil {
-		return results, nil
+		return nil, err
 	}
+	return NormalizeValidators(validators)
+}
 
-	rate, err := p.client.GetRate()
-	if err != nil {
-		return results, nil
-	}
-
+func NormalizeValidators(validators []Validator) (blockatlas.ValidatorPage, error) {
+	results := make(blockatlas.ValidatorPage, 0)
 	for _, v := range validators {
 		validator := blockatlas.Validator{
-			Status: bool(v.Status == 2),
+			Status: v.Jailed,
 			ID:     v.Address,
-			Reward: blockatlas.StakingReward{Annual: rate},
+			Reward: blockatlas.StakingReward{Annual: 20.00},
 		}
 		results = append(results, validator)
 	}
-
 	return results, nil
 }
 

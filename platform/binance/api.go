@@ -2,8 +2,9 @@ package binance
 
 import (
 	"fmt"
-	"github.com/trustwallet/blockatlas"
 	"strings"
+
+	"github.com/trustwallet/blockatlas"
 
 	"github.com/spf13/viper"
 	"github.com/thoas/go-funk"
@@ -158,7 +159,7 @@ func NormalizeToken(srcToken *Balance, tokens *TokenPage) (t blockatlas.Token, o
 	t = blockatlas.Token{
 		Name:     tk.Name,
 		Symbol:   tk.OriginalSymbol,
-		TokenId:  tk.Symbol,
+		TokenID:  tk.Symbol,
 		Coin:     coin.BNB,
 		Decimals: uint(decimalPlaces(tk.TotalSupply)),
 	}
