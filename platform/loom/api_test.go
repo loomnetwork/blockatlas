@@ -36,7 +36,7 @@ func TestGetValidatorAPI(t *testing.T) {
 	assert.NoError(t, err)
 	for i, v := range validators {
 		expected := blockatlas.Validator{
-			Status: v.Jailed,
+			Status: !v.Jailed,
 			ID:     v.Address,
 			Reward: blockatlas.StakingReward{Annual: 20.00},
 		}
