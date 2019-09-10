@@ -3,8 +3,8 @@ package loom
 import (
 	"github.com/trustwallet/blockatlas"
 
-	"github.com/loomnetwork/blockatlas/coin"
 	"github.com/spf13/viper"
+	"github.com/trustwallet/blockatlas/coin"
 )
 
 type Platform struct {
@@ -31,12 +31,11 @@ func (p *Platform) GetValidators() (blockatlas.ValidatorPage, error) {
 func NormalizeValidators(validators []Validator) (blockatlas.ValidatorPage, error) {
 	results := make(blockatlas.ValidatorPage, 0)
 	for _, v := range validators {
-		validator := blockatlas.Validator{
+		results = append(results, blockatlas.Validator{
 			Status: !v.Jailed,
 			ID:     v.Address,
 			Reward: blockatlas.StakingReward{Annual: 20.00},
-		}
-		results = append(results, validator)
+		})
 	}
 	return results, nil
 }

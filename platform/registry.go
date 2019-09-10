@@ -3,6 +3,7 @@ package platform
 import (
 	"fmt"
 
+	"github.com/loomnetwork/blockatlas/platform/loom"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/trustwallet/blockatlas"
@@ -16,7 +17,6 @@ import (
 	"github.com/trustwallet/blockatlas/platform/fio"
 	"github.com/trustwallet/blockatlas/platform/icon"
 	"github.com/trustwallet/blockatlas/platform/iotex"
-	"github.com/trustwallet/blockatlas/platform/loom"
 	"github.com/trustwallet/blockatlas/platform/nebulas"
 	"github.com/trustwallet/blockatlas/platform/nimiq"
 	"github.com/trustwallet/blockatlas/platform/ontology"
@@ -97,7 +97,6 @@ func Init() {
 	for _, platform := range platformList {
 		handle := platform.Coin().Handle
 		apiKey := fmt.Sprintf("%s.api", handle)
-		fmt.Println(apiKey)
 		if !viper.IsSet(apiKey) {
 			continue
 		}
