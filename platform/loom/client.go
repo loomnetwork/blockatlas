@@ -37,6 +37,7 @@ func (c *Client) GetValidators() (validators []Validator, err error) {
 	return validators, err
 }
 
+//TODO: need to implement this endpoint to loomchain
 func (c *Client) GetPool() (result StakingPool, err error) {
 	return result, c.Request.Get(&result, c.URL, "tw/staking/pool", nil)
 }
