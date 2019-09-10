@@ -320,9 +320,9 @@
   blockTime: 300000
   sampleAddress: 'DsTxPUVFxXeNgu5fzozr4mTR4tqqMaKcvpY'
 
-- id: 46558
+- id: 46658
   symbol: LOOM
-  handle: loomcoin
+  handle: loom
   name: Loom
   decimal: 18
   blockTime: 1000

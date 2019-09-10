@@ -1,6 +1,7 @@
 package loom
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -27,6 +28,7 @@ func InitClient(URL string) Client {
 }
 
 func (c *Client) GetValidators() (validators []Validator, err error) {
+	fmt.Printf("\nLOOM CURL : %+v", c.URL)
 	err = c.Request.Get(&validators, c.URL, "query/getvalidators", nil)
 	if err != nil {
 		logrus.WithError(err).Errorf("LOOM : Failed to get validators for address")

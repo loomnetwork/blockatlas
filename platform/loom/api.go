@@ -1,6 +1,8 @@
 package loom
 
 import (
+	"fmt"
+
 	"github.com/trustwallet/blockatlas"
 
 	"github.com/spf13/viper"
@@ -12,7 +14,8 @@ type Platform struct {
 }
 
 func (p *Platform) Init() error {
-	p.client = InitClient(viper.GetString("loom.rpc"))
+	fmt.Printf("\nLOOM PLATFORM : %+v", p.Coin())
+	p.client = InitClient(viper.GetString("loom.api"))
 	return nil
 }
 
@@ -25,10 +28,11 @@ func (p *Platform) GetValidators() (blockatlas.ValidatorPage, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NormalizeValidators(validators)
+	fmt.Printf("\nLOOM PLATFORM : %+v", p.Coin())
+	return normalizeValidators(validators)
 }
 
-func NormalizeValidators(validators []Validator) (blockatlas.ValidatorPage, error) {
+func normalizeValidators(validators []Validator) (blockatlas.ValidatorPage, error) {
 	results := make(blockatlas.ValidatorPage, 0)
 	for _, v := range validators {
 		results = append(results, blockatlas.Validator{

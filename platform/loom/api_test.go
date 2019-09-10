@@ -32,7 +32,7 @@ func TestGetValidatorAPI(t *testing.T) {
 	err := json.Unmarshal([]byte(validatorSrc), &validators)
 	assert.NoError(t, err)
 
-	actual, err := NormalizeValidators(validators)
+	actual, err := normalizeValidators(validators)
 	assert.NoError(t, err)
 	for i, v := range validators {
 		expected := blockatlas.Validator{

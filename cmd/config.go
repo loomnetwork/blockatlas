@@ -72,5 +72,5 @@ func loadDefaults() {
 	viper.SetDefault("zilliqa.rpc", "https://api.zilliqa.com/")
 	viper.SetDefault("nebulas.api", "https://explorer-backend.nebulas.io/api")
 	viper.SetDefault("fio.api", "https://addresses.fio.foundation")
-	viper.SetDefault("loom.rpc", "http://localhost:46658/")
+	viper.SetDefault("loom.api", "http://localhost:46658")
 }
