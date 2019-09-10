@@ -14,8 +14,8 @@ type Platform struct {
 }
 
 func (p *Platform) Init() error {
-	fmt.Printf("\nLOOM PLATFORM : %+v", p.Coin())
-	p.client = InitClient(viper.GetString("loom.api"))
+	fmt.Printf("\nINIT LOOM PLATFORM : %+v\n", p.Coin())
+	p.client = InitClient(viper.GetString("loom.api"), viper.GetString("loom.rpc"))
 	return nil
 }
 
@@ -28,7 +28,7 @@ func (p *Platform) GetValidators() (blockatlas.ValidatorPage, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("\nLOOM PLATFORM : %+v", p.Coin())
+	fmt.Printf("\nCALL LOOM GETVALIDATOR : %+v", p)
 	return normalizeValidators(validators)
 }
 

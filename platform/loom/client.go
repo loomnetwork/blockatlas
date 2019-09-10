@@ -13,9 +13,10 @@ import (
 type Client struct {
 	Request blockatlas.Request
 	URL     string
+	RpcURL  string
 }
 
-func InitClient(URL string) Client {
+func InitClient(URL, RpcURL string) Client {
 	return Client{
 		Request: blockatlas.Request{
 			HttpClient: http.DefaultClient,
@@ -23,7 +24,8 @@ func InitClient(URL string) Client {
 				return nil
 			},
 		},
-		URL: URL,
+		URL:    URL,
+		RpcURL: RpcURL,
 	}
 }
 
