@@ -1,7 +1,6 @@
 package loom
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/sirupsen/logrus"
@@ -29,7 +28,6 @@ func InitClient(URL, RpcURL string) Client {
 }
 
 func (c *Client) GetValidators() (validators []Validator, err error) {
-	fmt.Printf("\nLOOM CURL : %+v\n", c)
 	var info = struct {
 		JSONRPC string `json:"jsonrpc"`
 		ID      string `json:"id"`
