@@ -116,6 +116,3 @@ help: Makefile
 	@echo
 	@sed -n 's/^##//p' $< | column -t -s ':' |  sed -e 's/^/ /'
 	@echo
-
-buildnrun:
-	GO111MODULE=on go build -o blockatlas ./cmd && ./blockatlas api 
