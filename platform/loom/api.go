@@ -46,15 +46,6 @@ func NormalizeValidators(validators []Validator) (blockatlas.ValidatorPage, erro
 	return results, nil
 }
 
-func (p *Platform) CurrentBlockNumber() (int64, error) {
-	return p.client.CurrentBlockNumber()
-}
-
-func (p *Platform) GetTxsByAddress(address string) (blockatlas.TxPage, error) {
-	// TODO
-	return blockatlas.TxPage{}, nil
-}
-
 //Fee field from response example (100) is 1.00%
 func feeStringToFloat(s string) (float64, error) {
 	if s == "" {
