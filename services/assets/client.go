@@ -24,7 +24,7 @@ func GetValidators(coin coin.Coin) ([]AssetValidator, error) {
 			return nil
 		},
 	}
-	//err := request.Get(&results, AssetsURL+coin.Handle, "/validators/list.json", nil)
+	err := request.Get(&results, AssetsURL+coin.Handle, "/validators/list.json", nil)
 	return results, err
 }
 
