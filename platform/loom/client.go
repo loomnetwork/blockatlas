@@ -30,24 +30,31 @@ func InitClient(URL, RpcURL string) Client {
 }
 
 func (c *Client) GetValidators() (validators []Validator, err error) {
-	fmt.Printf("\nLOOM CURL : %+v", c.URL)
-	err = c.Request.Get(&validators, c.URL, "query/getvalidators", nil)
+	fmt.Printf("\nLOOM CURL : %+v\n", c)
+	var info = struct {
+		JSONRPC string `json:"jsonrpc"`
+		ID      string `json:"id"`
+		Result  struct {
+			Validators []Validator `json:"validators,omitempty"`
+		} `json:"result"`
+	}{}
+	err = c.Request.Get(&info, c.URL, "query/getvalidators", nil)
 	if err != nil {
-		logrus.WithError(err).Errorf("LOOM : Failed to get validators for address")
-		return validators, err
+		logrus.WithError(err).Errorf("LOOM : Failed to get validators")
+		return info.Result.Validators, err
 	}
-	return validators, err
+	return info.Result.Validators, err
 }
 
 //TODO: need to implement this endpoint to loomchain
 func (c *Client) GetPool() (result StakingPool, err error) {
-	return result, c.Request.Get(&result, c.URL, "tw/staking/pool", nil)
+	return result, c.Request.Get(&result, c.URL, "query/staking/pool", nil)
 }
 
 func (c *Client) GetRate() (float64, error) {
 	var result string
 
-	err := c.Request.Get(&result, c.URL, "tw/staking/rate", nil)
+	err := c.Request.Get(&result, c.URL, "query/staking/rate", nil)
 	if err != nil {
 		return 0, err
 	}
@@ -71,24 +78,3 @@ func (c *Client) CurrentBlockNumber() (num int64, err error) {
 
 	return num, nil
 }
-
-func (c *Client) GetBlockByNumber(num int64) (txs []Tx, err error) {
-	err = c.Request.Get(&txs, c.URL, "query/getevmblockbynumber", nil)
-	return txs, err
-}
-
-// TODO:
-// func (c *Client) GetTxsOfAddress(address string, tag string) (txs []Tx, err error) {
-// 	query := url.Values{
-// 		tag:     {address},
-// 		"page":  {strconv.FormatInt(1, 10)},
-// 		"limit": {strconv.FormatInt(1000, 10)},
-// 	}
-
-// 	err = c.Request.Get(&txs, c.URL, "txs", query)
-// 	if err != nil {
-// 		logrus.WithError(err).Errorf("LOOM: Failed to get transactions for address %s", address)
-// 		return nil, err
-// 	}
-// 	return txs, err
-// }

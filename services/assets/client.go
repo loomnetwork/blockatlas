@@ -1,11 +1,13 @@
 package assets
 
 import (
-	"github.com/trustwallet/blockatlas"
 	"time"
 
-	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas"
+
 	"net/http"
+
+	"github.com/trustwallet/blockatlas/coin"
 )
 
 const (
@@ -22,7 +24,7 @@ func GetValidators(coin coin.Coin) ([]AssetValidator, error) {
 			return nil
 		},
 	}
-	err := request.Get(&results, AssetsURL+coin.Handle, "/validators/list.json", nil)
+	//err := request.Get(&results, AssetsURL+coin.Handle, "/validators/list.json", nil)
 	return results, err
 }
 
