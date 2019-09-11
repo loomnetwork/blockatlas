@@ -1,5 +1,7 @@
 package loom
 
+const loomAnnualRate = 20.00
+
 // Fee - also references the "amount" struct
 type Fee struct {
 	FeeAmount []Amount `json:"amount"`
