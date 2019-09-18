@@ -40,7 +40,12 @@ func NormalizeValidators(validators []Validator) (blockatlas.ValidatorPage, erro
 		results = append(results, blockatlas.Validator{
 			Status: !v.Jailed,
 			ID:     v.Address,
-			Reward: blockatlas.StakingReward{Annual: calAnnualRate(fee)},
+			Reward: blockatlas.StakingReward{
+				Annual:      calculateRate(TierBonusMap[TierMap[3]], fee),
+				SixMonths:   calculateRate(TierBonusMap[TierMap[2]], fee),
+				ThreeMonths: calculateRate(TierBonusMap[TierMap[1]], fee),
+				TwoWeeks:    calculateRate(TierBonusMap[TierMap[0]], fee),
+			},
 		})
 	}
 	return results, nil
@@ -58,6 +63,6 @@ func feeStringToFloat(s string) (float64, error) {
 	return fee / 100, nil
 }
 
-func calAnnualRate(fee float64) float64 {
-	return loomAnnualRate - (loomAnnualRate * fee / 100)
+func calculateRate(rate, fee float64) float64 {
+	return rate - (rate * fee / 100)
 }
