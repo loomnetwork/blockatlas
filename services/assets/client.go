@@ -1,11 +1,13 @@
 package assets
 
 import (
-	"github.com/trustwallet/blockatlas"
 	"time"
 
-	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas"
+
 	"net/http"
+
+	"github.com/trustwallet/blockatlas/coin"
 )
 
 const (

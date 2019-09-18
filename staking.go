@@ -9,7 +9,10 @@ type DocsResponse struct {
 const ValidatorsPerPage = 100
 
 type StakingReward struct {
-	Annual float64 `json:"annual"`
+	Annual      float64 `json:"annual"`
+	SixMonths   float64 `json:"six_months,omitempty"`
+	ThreeMonths float64 `json:"three_months,omitempty"`
+	TwoWeeks    float64 `json:"two_weeks,omitempty"`
 }
 
 type Validator struct {

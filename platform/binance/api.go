@@ -2,8 +2,9 @@ package binance
 
 import (
 	"fmt"
-	"github.com/trustwallet/blockatlas"
 	"strings"
+
+	"github.com/trustwallet/blockatlas"
 
 	"github.com/spf13/viper"
 	"github.com/thoas/go-funk"

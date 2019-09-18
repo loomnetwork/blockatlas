@@ -3,8 +3,9 @@ package binance
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/trustwallet/blockatlas"
 	"testing"
+
+	"github.com/trustwallet/blockatlas"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/trustwallet/blockatlas/coin"

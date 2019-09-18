@@ -16,6 +16,7 @@ import (
 	"github.com/trustwallet/blockatlas/platform/fio"
 	"github.com/trustwallet/blockatlas/platform/icon"
 	"github.com/trustwallet/blockatlas/platform/iotex"
+	"github.com/trustwallet/blockatlas/platform/loom"
 	"github.com/trustwallet/blockatlas/platform/nebulas"
 	"github.com/trustwallet/blockatlas/platform/nimiq"
 	"github.com/trustwallet/blockatlas/platform/ontology"
@@ -72,6 +73,7 @@ var platformList = []blockatlas.Platform{
 	&bitcoin.Platform{CoinIndex: coin.DCR},
 	&nebulas.Platform{},
 	&fio.Platform{},
+	&loom.Platform{},
 }
 
 // Platforms contains all registered platforms by handle
@@ -95,7 +97,6 @@ func Init() {
 	for _, platform := range platformList {
 		handle := platform.Coin().Handle
 		apiKey := fmt.Sprintf("%s.api", handle)
-
 		if !viper.IsSet(apiKey) {
 			continue
 		}
