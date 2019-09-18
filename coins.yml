@@ -325,5 +325,5 @@
   handle: loom
   name: Loom
   decimal: 18
-  blockTime: 1000
+  blockTime: 1500
   sampleAddress: looma7be1a438a5c1d8298a73b9936cec59c5d626eb1

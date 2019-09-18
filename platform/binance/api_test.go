@@ -177,7 +177,7 @@ var tokenDst = blockatlas.Token{
 	Name:     "Aeron",
 	Symbol:   "ARN",
 	Decimals: 8,
-	TokenID:  "ARN-71B",
+	TokenId:  "ARN-71B",
 	Coin:     coin.BNB,
 }
 
