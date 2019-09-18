@@ -2,13 +2,12 @@ package iotex
 
 import (
 	"fmt"
+	"github.com/trustwallet/blockatlas/pkg/logger"
 	"net/http"
 	"net/url"
 	"strconv"
 
 	"github.com/trustwallet/blockatlas"
-
-	"github.com/sirupsen/logrus"
 )
 
 type Client struct {
@@ -55,7 +54,7 @@ func (c *Client) GetTxsOfAddress(address string, start int64) (*Response, error)
 	})
 
 	if err != nil {
-		logrus.WithError(err).Errorf("IOTEX: Failed to get transactions for address %s", address)
+		logger.Error(err, "IOTEX: Failed to get transactions for address", logger.Params{"address": address})
 		return nil, blockatlas.ErrSourceConn
 	}
 	return &response, err
@@ -64,6 +63,9 @@ func (c *Client) GetTxsOfAddress(address string, start int64) (*Response, error)
 func (c *Client) GetAddressTotalTransactions(address string) (int64, error) {
 	var account AccountInfo
 	err := c.Request.Get(&account, c.URL, "accounts/"+address, nil)
+	if err != nil {
+		return 0, nil
+	}
 	numActions, err := strconv.ParseInt(account.AccountMeta.NumActions, 10, 64)
 	if err != nil {
 		return 0, nil

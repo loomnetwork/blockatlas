@@ -3,10 +3,10 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/trustwallet/blockatlas/observer"
 	observerStorage "github.com/trustwallet/blockatlas/observer/storage"
+	"github.com/trustwallet/blockatlas/pkg/logger"
 	"github.com/trustwallet/blockatlas/platform"
 	"github.com/trustwallet/blockatlas/platform/bitcoin"
 	"net/http"
@@ -88,18 +88,20 @@ func addCall(c *gin.Context) {
 func cacheXPubAddress(xpub string, coin uint) {
 	platform := bitcoin.UtxoPlatform(coin)
 	addresses, err := platform.GetAddressesFromXpub(xpub)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"xpub": xpub,
-			"coin": coin,
-		}).Error(err)
+	if err != nil || len(addresses) == 0 {
+		logger.Error("GetAddressesFromXpub", err, logger.Params{
+			"xpub":      xpub,
+			"coin":      coin,
+			"addresses": addresses,
+		})
+		return
 	}
 	err = observerStorage.App.SaveXpubAddresses(coin, addresses, xpub)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
+		logger.Error("SaveXpubAddresses", err, logger.Params{
 			"xpub": xpub,
 			"coin": coin,
-		}).Error(err)
+		})
 	}
 }
 

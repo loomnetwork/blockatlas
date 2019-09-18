@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/go-redis/redis"
@@ -39,12 +40,46 @@ func (s *Storage) SetBlockNumber(coin uint, num int64) error {
 }
 
 func (s *Storage) SaveXpubAddresses(coin uint, addresses []string, xpub string) error {
+	if len(addresses) == 0 {
+		return fmt.Errorf("no addresses for xpub: %s", xpub)
+	}
+	
 	a := make(map[string]interface{})
 	for _, address := range addresses {
 		a[address] = xpub
 	}
+
 	key := fmt.Sprintf(keyXpub, coin)
-	return s.saveHashMap(key, a)
+	err := s.saveHashMap(key, a)
+	if err != nil {
+		return err
+	}
+	j, err := json.Marshal(addresses)
+	if err != nil {
+		return err
+	}
+	return s.saveHashMap(key, map[string]interface{}{xpub: j})
+}
+
+func (s *Storage) GetAddressFromXpub(coin uint, xpub string) ([]string, error) {
+	key := fmt.Sprintf(keyXpub, coin)
+	hm, err := s.getHashMap(key, xpub)
+	if err != nil {
+		return nil, err
+	}
+	if len(hm) == 0 {
+		return nil, fmt.Errorf("xpub not found: %s", xpub)
+	}
+	r, ok := hm[0].(string)
+	if !ok {
+		return nil, fmt.Errorf("failed to cast address list from xpub: %s - %v", xpub, hm)
+	}
+	var list []string
+	err = json.Unmarshal([]byte(r), &list)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
 }
 
 func (s *Storage) GetXpubFromAddress(coin uint, address string) (string, error) {
@@ -54,11 +89,11 @@ func (s *Storage) GetXpubFromAddress(coin uint, address string) (string, error) 
 		return "", err
 	}
 	if len(r) == 0 {
-		return "", errors.New(fmt.Sprintf("xpub not found for the address: %s", address))
+		return "", fmt.Errorf("xpub not found for the address: %s", address)
 	}
 	xpub, ok := r[0].(string)
 	if !ok || len(xpub) == 0 {
-		return "", errors.New(fmt.Sprintf("invalid type for xpub: %s - %s", xpub, address))
+		return "", fmt.Errorf("invalid type for xpub: %s - %s", xpub, address)
 	}
 	return xpub, nil
 }
@@ -119,6 +154,7 @@ func (s *Storage) Delete(subs []observer.Subscription) error {
 
 func (s *Storage) updateWebHooks(subs []observer.Subscription, operation webHookOperation) error {
 	fields := make(map[string]interface{})
+	del := make([]string, 0)
 	keys := make([]string, 0)
 	for _, sub := range subs {
 		keys = append(keys, key(sub.Coin, sub.Address))
@@ -138,9 +174,23 @@ func (s *Storage) updateWebHooks(subs []observer.Subscription, operation webHook
 		} else {
 			newWebHooks = operation(nil, subs[i].Webhooks)
 		}
+		if len(newWebHooks) == 0 {
+			del = append(del, key)
+			continue
+		}
 		fields[key] = strings.Join(newWebHooks, "\n")
 	}
+	if len(del) > 0 {
+		err = s.deleteHashMapKey(keyObservers, del)
+		if err != nil {
+			return err
+		}
+	}
 	return s.saveHashMap(keyObservers, fields)
+}
+
+func (s *Storage) deleteHashMapKey(db string, fields []string) error {
+	return s.client.HDel(db, fields...).Err()
 }
 
 func (s *Storage) saveHashMap(db string, field map[string]interface{}) error {

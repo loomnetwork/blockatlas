@@ -3,8 +3,9 @@ package ethereum
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"github.com/trustwallet/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/errors"
+	"github.com/trustwallet/blockatlas/pkg/logger"
 	"net/http"
 	"net/url"
 )
@@ -38,7 +39,7 @@ func (c *Client) getTxs(uri string) (*Page, error) {
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
-		logrus.WithError(err).Error("Ethereum/Trust Ray: Failed to get transactions")
+		logger.Error(err, "Ethereum/Trust Ray: Failed to get transactions")
 		return nil, blockatlas.ErrSourceConn
 	}
 	defer res.Body.Close()
@@ -72,14 +73,14 @@ func (c *Client) CurrentBlockNumber() (num int64, err error) {
 	path := fmt.Sprintf("%s/node_info", c.BaseURL)
 	res, err := http.Get(path)
 	if err != nil {
-		return num, err
+		return num, errors.E(err, errors.TypePlatformRequest, errors.Params{"coin": "Ethereum"})
 	}
 	defer res.Body.Close()
 	var nodeInfo NodeInfo
 	dec := json.NewDecoder(res.Body)
 	err = dec.Decode(&nodeInfo)
 	if err != nil {
-		return num, err
+		return num, errors.E(err, errors.TypePlatformUnmarshal, errors.Params{"coin": "Ethereum"})
 	}
 
 	return nodeInfo.LatestBlock, nil
@@ -94,7 +95,7 @@ func (c *Client) GetTokens(address string) (*TokenPage, error) {
 
 	res, err := http.Get(path)
 	if err != nil {
-		logrus.WithError(err).Error("Ethereum/Trust Ray: Failed to get my tokens")
+		logger.Error(err, "Ethereum/Trust Ray: Failed to get my tokens")
 		return nil, blockatlas.ErrSourceConn
 	}
 	defer res.Body.Close()

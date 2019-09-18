@@ -3,8 +3,8 @@ package binance
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"github.com/trustwallet/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/logger"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -71,8 +71,10 @@ func (c *Client) GetTokens() (*TokenPage, error) {
 
 func getHTTPError(res *http.Response, desc string) error {
 	switch res.StatusCode {
-	case http.StatusBadRequest, http.StatusNotFound:
+	case http.StatusBadRequest:
 		return getAPIError(res, desc)
+	case http.StatusNotFound:
+		return blockatlas.ErrNotFound
 	case http.StatusOK:
 		return nil
 	default:
@@ -84,7 +86,7 @@ func getAPIError(res *http.Response, desc string) error {
 	var sErr Error
 	err := json.NewDecoder(res.Body).Decode(&sErr)
 	if err != nil {
-		logrus.WithError(err).Error("Binance: Failed to decode error response")
+		logger.Error(err, "Binance: Failed to decode error response")
 		return blockatlas.ErrSourceConn
 	}
 
@@ -93,10 +95,10 @@ func getAPIError(res *http.Response, desc string) error {
 		return blockatlas.ErrInvalidAddr
 	}
 
-	logrus.WithFields(logrus.Fields{
+	logger.Error("Binance: Failed", desc, err, logger.Params{
 		"status":  res.StatusCode,
 		"code":    sErr.Code,
 		"message": sErr.Message,
-	}).Error("Binance: Failed to " + desc)
+	})
 	return blockatlas.ErrSourceConn
 }
