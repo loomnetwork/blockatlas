@@ -2,11 +2,10 @@ package ontology
 
 import (
 	"github.com/spf13/viper"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"github.com/trustwallet/blockatlas/pkg/logger"
 	"github.com/trustwallet/blockatlas/util"
-	"net/http"
 	"strings"
 )
 
@@ -21,8 +20,7 @@ const (
 )
 
 func (p *Platform) Init() error {
-	p.client.BaseURL = viper.GetString("ontology.api")
-	p.client.HTTPClient = http.DefaultClient
+	p.client = Client{blockatlas.InitClient(viper.GetString("ontology.api"))}
 	return nil
 }
 

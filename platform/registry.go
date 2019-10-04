@@ -2,10 +2,11 @@ package platform
 
 import (
 	"fmt"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"github.com/trustwallet/blockatlas/pkg/logger"
+	"github.com/trustwallet/blockatlas/platform/algorand"
 
 	"github.com/spf13/viper"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
 	"github.com/trustwallet/blockatlas/platform/aeternity"
 	"github.com/trustwallet/blockatlas/platform/aion"
@@ -70,6 +71,7 @@ var platformList = []blockatlas.Platform{
 	&bitcoin.Platform{CoinIndex: coin.DCR},
 	&nebulas.Platform{},
 	&fio.Platform{},
+	&algorand.Platform{},
 }
 
 // Platforms contains all registered platforms by handle

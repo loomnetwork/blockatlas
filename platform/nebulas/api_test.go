@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 )
 
@@ -41,7 +41,9 @@ var transferDst = blockatlas.Tx{
 	Block:    2848548,
 	Status:   blockatlas.StatusCompleted,
 	Meta: blockatlas.Transfer{
-		Value: "500000000000000000",
+		Value:    "500000000000000000",
+		Symbol:   "NAS",
+		Decimals: 18,
 	},
 }
 
@@ -66,6 +68,8 @@ func TestNormalize(t *testing.T) {
 	}
 
 	if !bytes.Equal(resJSON, dstJSON) {
+		println(string(resJSON))
+		println(string(dstJSON))
 		t.Error("tx don't equal")
 	}
 }

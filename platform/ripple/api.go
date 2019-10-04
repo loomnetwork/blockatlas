@@ -2,9 +2,8 @@ package ripple
 
 import (
 	"github.com/spf13/viper"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
-	"net/http"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"strconv"
 	"time"
 )
@@ -14,8 +13,7 @@ type Platform struct {
 }
 
 func (p *Platform) Init() error {
-	p.client.BaseURL = viper.GetString("ripple.api")
-	p.client.HTTPClient = http.DefaultClient
+	p.client = Client{blockatlas.InitClient(viper.GetString("ripple.api"))}
 	return nil
 }
 

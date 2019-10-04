@@ -2,7 +2,7 @@
 
 [![Build Status](https://dev.azure.com/TrustWallet/Trust%20BlockAtlas/_apis/build/status/TrustWallet.blockatlas?branchName=master)](https://dev.azure.com/TrustWallet/Trust%20BlockAtlas/_build/latest?definitionId=27&branchName=master)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/43834b0c94ad4f6088629aa3e3bb5e94)](https://www.codacy.com/app/TrustWallet/blockatlas?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=TrustWallet/blockatlas&amp;utm_campaign=Badge_Grade)
-[![Go Report Card](https://goreportcard.com/badge/TrustWallet/blockatlas)](https://goreportcard.com/report/TrustWallet/blockatlas)
+[![Go Report Card](https://goreportcard.com/badge/trustwallet/blockatlas)](https://goreportcard.com/report/TrustWallet/blockatlas)
 
 Clean explorer API and events observer for crypto currencies.
 
@@ -121,6 +121,21 @@ ATLAS_NIMIQ_API=http://localhost:8648 \
 blockatlas
 ```
 
+
+## Docs
+
+Swagger API docs provided at path `/swagger/index.html`
+
+#### Updating Docs
+
+- After creating a new route, add comments to your API source code, [See Declarative Comments Format](https://swaggo.github.io/swaggo.io/declarative_comments_format/).
+- Download Swag for Go by using:
+
+    `$ go get -u github.com/swaggo/swag/cmd/swag`
+
+- Run the Swag in your Go project root folder.
+
+    `$ swag init`
 
 ## Tests
 
@@ -283,6 +298,13 @@ if err != nil {
  or 
 `logger.Warn("Warning", err, logger.Params{"bind": bind})`
 
+
+## Metrics
+
+The Blockatlas can collect and expose by `expvar's`, metrics about the application healthy and clients and server requests.
+Prometheus or another service can collect metrics provided from the `/metrics` endpoint.
+
+To protect the route, you can set the environment variables `METRICS_API_TOKEN`, and this route starts to require the auth bearer token. 
 
 ## Authors
 

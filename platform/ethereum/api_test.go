@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustwallet/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"math/big"
 	"testing"
 
@@ -159,7 +159,9 @@ var transferDst = blockatlas.Tx{
 	Sequence: 88,
 	Status:   blockatlas.StatusCompleted,
 	Meta: blockatlas.Transfer{
-		Value: "1999895000000000000",
+		Value:    "1999895000000000000",
+		Symbol:   "ETH",
+		Decimals: 18,
 	},
 }
 
@@ -174,7 +176,9 @@ var transferContractDst = blockatlas.Tx{
 	Sequence: 88,
 	Status:   blockatlas.StatusCompleted,
 	Meta: blockatlas.Transfer{
-		Value: "1999895000000000000",
+		Value:    "1999895000000000000",
+		Symbol:   "ETH",
+		Decimals: 18,
 	},
 }
 
@@ -190,7 +194,9 @@ var failedDst = blockatlas.Tx{
 	Status:   blockatlas.StatusFailed,
 	Error:    "Error",
 	Meta: blockatlas.Transfer{
-		Value: "59859820000000000",
+		Value:    "59859820000000000",
+		Symbol:   "ETH",
+		Decimals: 18,
 	},
 }
 

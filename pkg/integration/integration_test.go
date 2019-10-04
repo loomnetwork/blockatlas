@@ -4,8 +4,7 @@ package integration
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/trustwallet/blockatlas/cmd/api"
-	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/cmd"
 	"github.com/trustwallet/blockatlas/config"
 	"github.com/trustwallet/blockatlas/platform"
 	"os"
@@ -16,13 +15,12 @@ import (
 
 func TestApis(t *testing.T) {
 	config.LoadConfig(os.Getenv("TEST_CONFIG"))
-	coin.Load(os.Getenv("TEST_COINS"))
 	platform.Init()
 
 	p := ":8080"
 	c := make(chan *gin.Engine)
 	go func() {
-		api.Run(p, c)
+		cmd.RunApi(p, c)
 	}()
 	e := <-c
 	time.Sleep(time.Second * 2)
@@ -31,8 +29,8 @@ func TestApis(t *testing.T) {
 	cl := newClient(t, p)
 	for _, r := range e.Routes() {
 		wg.Add(1)
-		t.Run(r.Path, func(t *testing.T){
-			go cl.doTests(r.Path, &wg)
+		t.Run(r.Path, func(t *testing.T) {
+			go cl.doTests(r.Method, r.Path, &wg)
 		})
 	}
 	wg.Wait()

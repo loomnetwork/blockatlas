@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"github.com/trustwallet/blockatlas/pkg/logger"
 	"math/big"
 	"net/http"
@@ -26,12 +26,15 @@ type Platform struct {
 func (p *Platform) Init() error {
 	handle := coin.Coins[p.CoinIndex].Handle
 
-	p.client.HTTPClient = http.DefaultClient
-	p.client.BaseURL = viper.GetString(fmt.Sprintf("%s.api", handle))
+	coinVar := fmt.Sprintf("%s.api", handle)
+	p.client = Client{blockatlas.InitClient(viper.GetString(coinVar))}
 
-	p.collectionsClient.HTTPClient = http.DefaultClient
-	p.collectionsClient.CollectionsURL = viper.GetString(fmt.Sprintf("%s.collections_api", handle))
-	p.collectionsClient.CollectionsApiKey = viper.GetString(fmt.Sprintf("%s.collections_api_key", handle))
+	collectionsApiVar := fmt.Sprintf("%s.collections_api", handle)
+	p.collectionsClient = CollectionsClient{blockatlas.InitClient(viper.GetString(collectionsApiVar))}
+
+	collectionsApiKeyVar := fmt.Sprintf("%s.collections_api_key", handle)
+	p.collectionsClient.Headers["X-API-KEY"] = viper.GetString(collectionsApiKeyVar)
+
 	return nil
 }
 

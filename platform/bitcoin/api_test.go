@@ -3,10 +3,10 @@ package bitcoin
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 
 	mapset "github.com/deckarep/golang-set"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
 )
 
@@ -103,7 +103,9 @@ var expectedOutgoingTx = blockatlas.Tx{
 	Sequence:  0,
 	Direction: blockatlas.DirectionSelf,
 	Meta: blockatlas.Transfer{
-		Value: "677012",
+		Value:    "677012",
+		Symbol:   "BTC",
+		Decimals: 8,
 	},
 }
 
@@ -136,7 +138,9 @@ var expectedIncomingTx = blockatlas.Tx{
 	Sequence:  0,
 	Direction: blockatlas.DirectionIncoming,
 	Meta: blockatlas.Transfer{
-		Value: "200997",
+		Value:    "200997",
+		Symbol:   "ZEC",
+		Decimals: 8,
 	},
 }
 

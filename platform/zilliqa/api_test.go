@@ -3,7 +3,7 @@ package zilliqa
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/trustwallet/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 
 	"github.com/trustwallet/blockatlas/coin"
@@ -36,7 +36,9 @@ var transferDst = blockatlas.Tx{
 	Sequence: 3,
 	Memo:     "",
 	Meta: blockatlas.Transfer{
-		Value: "7997000000000",
+		Value:    "7997000000000",
+		Symbol:   "ZIL",
+		Decimals: 12,
 	},
 }
 

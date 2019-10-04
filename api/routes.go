@@ -9,7 +9,7 @@ import (
 
 var routers = make(map[string]gin.IRouter)
 
-func loadPlatforms(root gin.IRouter) {
+func LoadPlatforms(root gin.IRouter) {
 	v1 := root.Group("/v1")
 	v2 := root.Group("/v2")
 
@@ -28,11 +28,13 @@ func loadPlatforms(root gin.IRouter) {
 
 	for _, stakeAPI := range platform.Platforms {
 		router := getRouter(v2, stakeAPI.Coin().Handle)
-		makeStakingRoute(router, stakeAPI)
+		makeStakingValidatorsRoute(router, stakeAPI)
+		makeStakingDelegationsRoute(router, stakeAPI)
 	}
 
 	for _, collectionAPI := range platform.Platforms {
 		router := getRouter(v2, collectionAPI.Coin().Handle)
+		makeCollectionsRoute(router, collectionAPI)
 		makeCollectionRoute(router, collectionAPI)
 	}
 
@@ -41,6 +43,7 @@ func loadPlatforms(root gin.IRouter) {
 		customAPI.RegisterRoutes(router)
 	}
 
+	makeStakingDelegationsBatchRoute(v2)
 	logger.Info("Routes set up", logger.Params{"routes": len(routers)})
 
 	v1.GET("/", getEnabledEndpoints)

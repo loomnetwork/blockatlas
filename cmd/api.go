@@ -1,54 +1,58 @@
-package api
+package cmd
 
 import (
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/trustwallet/blockatlas/api"
 	observerStorage "github.com/trustwallet/blockatlas/observer/storage"
 	"github.com/trustwallet/blockatlas/pkg/logger"
 	"github.com/trustwallet/blockatlas/util"
-	"net/http"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	_ "github.com/trustwallet/blockatlas/docs"
 )
 
-var Cmd = cobra.Command{
+var apiCmd = cobra.Command{
 	Use:   "api <bind>",
 	Short: "API server",
 	Args:  cobra.MaximumNArgs(1),
-	Run:   run,
+	Run:   runApi,
 }
 
-var engine *gin.Engine
-
-func run(_ *cobra.Command, args []string) {
+func runApi(_ *cobra.Command, args []string) {
 	var bind string
 	if len(args) == 0 {
 		bind = ":8420"
 	} else {
 		bind = args[0]
 	}
-
-	Run(bind, nil)
+	RunApi(bind, nil)
 }
 
-func Run(bind string, c chan *gin.Engine) {
+func RunApi(bind string, c chan *gin.Engine) {
 	gin.SetMode(viper.GetString("gin.mode"))
-	engine = gin.Default()
+	engine := gin.Default()
 
 	sg := sentrygin.New(sentrygin.Options{})
 	engine.Use(util.CheckReverseProxy, sg)
 
-	engine.GET("/", getRoot)
+	engine.GET("swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	engine.GET("/", api.GetRoot)
 	engine.GET("/status", func(c *gin.Context) {
-		c.JSON(http.StatusOK, map[string]interface{}{
+		api.RenderSuccess(c, map[string]interface{}{
 			"status": true,
 		})
 	})
 
-	loadPlatforms(engine)
+	api.MakeMetricsRoute(engine)
+	api.LoadPlatforms(engine)
 	if observerStorage.App != nil {
 		observerAPI := engine.Group("/observer/v1")
-		setupObserverAPI(observerAPI)
+		api.SetupObserverAPI(observerAPI)
 	}
 
 	if c != nil {
@@ -59,4 +63,8 @@ func Run(bind string, c chan *gin.Engine) {
 	if err := engine.Run(bind); err != nil {
 		logger.Fatal("Application failed", err)
 	}
+}
+
+func init() {
+	rootCmd.AddCommand(&apiCmd)
 }

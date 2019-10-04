@@ -1,29 +1,17 @@
 package cosmos
 
 import (
-	"github.com/trustwallet/blockatlas"
+	"fmt"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/errors"
 	"github.com/trustwallet/blockatlas/pkg/logger"
-	"net/http"
 	"net/url"
 	"strconv"
 )
 
 // Client - the HTTP client
 type Client struct {
-	Request blockatlas.Request
-	URL     string
-}
-
-func InitClient(URL string) Client {
-	return Client{
-		Request: blockatlas.Request{
-			HttpClient: http.DefaultClient,
-			ErrorHandler: func(res *http.Response, uri string) error {
-				return nil
-			},
-		},
-		URL: URL,
-	}
+	blockatlas.Request
 }
 
 // GetAddrTxes - get all ATOM transactions for a given address
@@ -34,9 +22,8 @@ func (c *Client) GetAddrTxes(address string, tag string) (txs []Tx, err error) {
 		"limit": {strconv.FormatInt(1000, 10)},
 	}
 
-	err = c.Request.Get(&txs, c.URL, "txs", query)
+	err = c.Get(&txs, "txs", query)
 	if err != nil {
-		logger.Error(err, "Cosmos: Failed to get transactions for address", logger.Params{"address": address})
 		return nil, err
 	}
 	return txs, err
@@ -48,49 +35,69 @@ func (c *Client) GetValidators() (validators []Validator, err error) {
 		"page":   {strconv.FormatInt(1, 10)},
 		"limit":  {strconv.FormatInt(blockatlas.ValidatorsPerPage, 10)},
 	}
-	err = c.Request.Get(&validators, c.URL, "staking/validators", query)
+	err = c.Get(&validators, "staking/validators", query)
 	if err != nil {
-		logger.Error(err, "Cosmos: Failed to get validators for address")
 		return validators, err
 	}
 	return validators, err
 }
 
 func (c *Client) GetBlockByNumber(num int64) (txs []Tx, err error) {
-	err = c.Request.Get(&txs, c.URL, "txs", url.Values{"tx.height": {strconv.FormatInt(num, 10)}})
+	err = c.Get(&txs, "txs", url.Values{"tx.height": {strconv.FormatInt(num, 10)}})
 	return txs, err
 }
 
 func (c *Client) CurrentBlockNumber() (num int64, err error) {
 	var block Block
-	err = c.Request.Get(&block, c.URL, "blocks/latest", nil)
+	err = c.Get(&block, "blocks/latest", nil)
 
 	if err != nil {
 		return num, err
 	}
 
 	num, err = strconv.ParseInt(block.Meta.Header.Height, 10, 64)
-
 	if err != nil {
-		return num, err
+		return num, errors.E("error to ParseInt", errors.TypePlatformUnmarshal)
 	}
 
 	return num, nil
 }
 
 func (c *Client) GetPool() (result StakingPool, err error) {
-	return result, c.Request.Get(&result, c.URL, "staking/pool", nil)
+	return result, c.Get(&result, "staking/pool", nil)
 }
 
 func (c *Client) GetInflation() (float64, error) {
 	var result string
 
-	err := c.Request.Get(&result, c.URL, "minting/inflation", nil)
+	err := c.Get(&result, "minting/inflation", nil)
 	if err != nil {
 		return 0, err
 	}
 
 	s, err := strconv.ParseFloat(result, 32)
+	if err != nil {
+		return 0, errors.E("error to ParseFloat", errors.TypePlatformUnmarshal)
+	}
+	return s, nil
+}
 
-	return s, err
+func (c *Client) GetDelegations(address string) (delegations []Delegation, err error) {
+	path := fmt.Sprintf("staking/delegators/%s/delegations", address)
+
+	err = c.Get(&delegations, path, nil)
+	if err != nil {
+		logger.Error(err, "Cosmos: Failed to get delegations for address")
+	}
+	return
+}
+
+func (c *Client) GetUnbondingDelegations(address string) (delegations []UnbondingDelegation, err error) {
+	path := fmt.Sprintf("staking/delegators/%s/unbonding_delegations", address)
+
+	err = c.Get(&delegations, path, nil)
+	if err != nil {
+		logger.Error(err, "Cosmos: Failed to get unbonding delegations for address")
+	}
+	return
 }

@@ -3,8 +3,8 @@ package vechain
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 )
 
@@ -132,6 +132,7 @@ var expectedTransferTrx = blockatlas.Tx{
 	Meta: blockatlas.Transfer{
 		Value:    "770000000000000000000",
 		Decimals: 18,
+		Symbol:   "VET",
 	},
 }
 

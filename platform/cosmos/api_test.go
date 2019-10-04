@@ -3,10 +3,10 @@ package cosmos
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
 )
 
@@ -250,6 +250,31 @@ const validatorSrc = `
   }
 `
 
+const delegationsSrc = `
+[
+  {
+    "delegator_address": "cosmos1cxehfdhfm96ljpktdxsj0k6xp9gtuheghwgqug",
+    "validator_address": "cosmosvaloper1qwl879nx9t6kef4supyazayf7vjhennyh568ys",
+    "shares": "1999999.999931853807876751"
+  }
+]`
+
+const unbondingDelegationsSrc = `
+[
+  {
+    "delegator_address": "cosmos1cxehfdhfm96ljpktdxsj0k6xp9gtuheghwgqug",
+    "validator_address": "cosmosvaloper1qwl879nx9t6kef4supyazayf7vjhennyh568ys",
+    "entries": [
+      {
+        "creation_height": "1780365",
+        "completion_time": "2019-10-03T05:37:26.350018207Z",
+        "initial_balance": "5000000",
+        "balance": "5000000"
+      }
+    ]
+  }
+]`
+
 var transferDst = blockatlas.Tx{
 	ID:     "E19B011D20D862DA0BEA7F24E3BC6DFF666EE6E044FCD9BD95B073478086DBB6",
 	Coin:   coin.ATOM,
@@ -260,7 +285,9 @@ var transferDst = blockatlas.Tx{
 	Block:  151980,
 	Status: blockatlas.StatusCompleted,
 	Meta: blockatlas.Transfer{
-		Value: "2271999999",
+		Value:    "2271999999",
+		Symbol:   "ATOM",
+		Decimals: 6,
 	},
 }
 
@@ -347,9 +374,11 @@ func TestNormalizeValidator(t *testing.T) {
 	_ = json.Unmarshal([]byte(validatorSrc), &v)
 	coin := coin.Coin{}
 	expected := blockatlas.Validator{
-		Status: true,
-		ID:     v.Address,
-		Reward: blockatlas.StakingReward{Annual: 435.48749999999995},
+		Status:        true,
+		ID:            v.Address,
+		Reward:        blockatlas.StakingReward{Annual: 435.48749999999995},
+		LockTime:      1814400,
+		MinimumAmount: "0",
 	}
 
 	result := normalizeValidator(v, stakingPool, inflation, coin)
@@ -358,8 +387,63 @@ func TestNormalizeValidator(t *testing.T) {
 }
 
 func TestCalculateAnnualReward(t *testing.T) {
-
 	result := CalculateAnnualReward(StakingPool{"1222", "200"}, inflation, cosmosValidator)
-
 	assert.Equal(t, result, 298.61999703347686)
+}
+
+var validator1 = blockatlas.StakeValidator{
+	ID:     "cosmosvaloper1qwl879nx9t6kef4supyazayf7vjhennyh568ys",
+	Status: true,
+	Info: blockatlas.StakeValidatorInfo{
+		Name:        "Certus One",
+		Description: "Stake and earn rewards with the most secure and stable validator. Winner of the Game of Stakes. Operated by Certus One Inc. By delegating, you confirm that you are aware of the risk of slashing and that Certus One Inc is not liable for any potential damages to your investment.",
+		Image:       "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/cosmos/validators/assets/cosmosvaloper1qwl879nx9t6kef4supyazayf7vjhennyh568ys/logo.png",
+		Website:     "https://certus.one",
+	},
+	Reward: blockatlas.StakingReward{
+		Annual: 9.259735525366604,
+	},
+	LockTime:      1814400,
+	MinimumAmount: "0",
+}
+
+var validatorMap = blockatlas.ValidatorMap{
+	"cosmosvaloper1qwl879nx9t6kef4supyazayf7vjhennyh568ys": validator1,
+}
+
+func TestNormalizeDelegations(t *testing.T) {
+	var delegations []Delegation
+	err := json.Unmarshal([]byte(delegationsSrc), &delegations)
+	assert.NoError(t, err)
+	assert.NotNil(t, delegations)
+
+	expected := []blockatlas.Delegation{
+		{
+			Delegator: validator1,
+			Value:     "1999999",
+			Status:    blockatlas.DelegationStatusActive,
+		},
+	}
+	result := NormalizeDelegations(delegations, validatorMap)
+	assert.Equal(t, result, expected)
+}
+
+func TestNormalizeUnbondingDelegations(t *testing.T) {
+	var delegations []UnbondingDelegation
+	err := json.Unmarshal([]byte(unbondingDelegationsSrc), &delegations)
+	assert.NoError(t, err)
+	assert.NotNil(t, delegations)
+
+	expected := []blockatlas.Delegation{
+		{
+			Delegator: validator1,
+			Value:     "5000000",
+			Status:    blockatlas.DelegationStatusPending,
+			Metadata: blockatlas.DelegationMetaDataPending{
+				AvailableDate: 1570081046,
+			},
+		},
+	}
+	result := NormalizeUnbondingDelegations(delegations, validatorMap)
+	assert.Equal(t, result, expected)
 }

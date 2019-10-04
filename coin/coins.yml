@@ -1,7 +1,7 @@
 - id: 60
   symbol: ETH
   handle: ethereum
-  name: Ether
+  name: Ethereum
   decimals: 18
   blockTime: 10000
   sampleAddress: '0xfc10cab6a50a1ab10c56983c80cc82afc6559cf1'
@@ -9,7 +9,7 @@
 - id: 61
   symbol: ETC
   handle: classic
-  name: Ether Classic
+  name: Ethereum Classic
   decimals: 18
   blockTime: 30000
   sampleAddress: '0xf3524415b6D873205B4c3Cda783527b2aC4daAA9'
@@ -118,7 +118,7 @@
 - id: 714
   symbol: BNB
   handle: binance
-  name: Binance
+  name: BNB
   decimals: 8
   blockTime: 4000
   sampleAddress: 'tbnb1fhr04azuhcj0dulm7ka40y0cqjlafwae9k9gk2'
@@ -321,3 +321,11 @@
   decimals: 8
   blockTime: 300000
   sampleAddress: 'DsTxPUVFxXeNgu5fzozr4mTR4tqqMaKcvpY'
+
+- id: 283
+  symbol: ALGO
+  handle: algorand
+  name: Algorand
+  decimals: 6
+  blockTime: 20000
+  sampleAddress: '4EZFQABCVQTHQCK3HQBIYGC4NV2VM42FZHEFTVH77ROG4ZGREC6Y7V5T2U'

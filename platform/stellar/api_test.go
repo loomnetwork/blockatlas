@@ -3,8 +3,8 @@ package stellar
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 )
 
@@ -33,7 +33,9 @@ var createDst = blockatlas.Tx{
 	Date:  1470850220,
 	Block: 25002129911451649,
 	Meta: blockatlas.Transfer{
-		Value: "473269393700000000",
+		Value:    "473269393700000000",
+		Symbol:   "XLM",
+		Decimals: 7,
 	},
 }
 
@@ -63,7 +65,9 @@ var transferDst = blockatlas.Tx{
 	Date:  1470857941,
 	Block: 25008572362395649,
 	Meta: blockatlas.Transfer{
-		Value: blockatlas.Amount("1000000000000000"),
+		Value:    blockatlas.Amount("1000000000000000"),
+		Symbol:   "XLM",
+		Decimals: 7,
 	},
 }
 

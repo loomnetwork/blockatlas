@@ -7,7 +7,7 @@ import (
 
 type errMessage struct {
 	*message
-	err *errors.Error
+	err error
 }
 
 func Error(args ...interface{}) {
@@ -16,7 +16,6 @@ func Error(args ...interface{}) {
 	}
 	e := getError(args...)
 	log.WithFields(e.params).Error(e.err)
-	errors.SendError(e.err)
 }
 
 func Fatal(args ...interface{}) {
@@ -46,9 +45,14 @@ func getError(args ...interface{}) *errMessage {
 			err.err = arg
 		case error:
 			err.err = errors.E(arg)
+		case nil:
+			continue
 		default:
 			continue
 		}
+	}
+	if err.err == nil {
+		err.err = errors.E(msg.message, msg.params)
 	}
 	return err
 }

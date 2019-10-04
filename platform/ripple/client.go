@@ -1,72 +1,53 @@
 package ripple
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/trustwallet/blockatlas"
-	"github.com/trustwallet/blockatlas/pkg/logger"
-	"net/http"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"net/url"
 )
 
 type Client struct {
-	HTTPClient *http.Client
-	BaseURL    string
+	blockatlas.Request
 }
 
 func (c *Client) GetTxsOfAddress(address string) ([]Tx, error) {
-	uri := fmt.Sprintf("%s/accounts/%s/transactions?type=Payment&result=tesSUCCESS&limit=%d",
-		c.BaseURL,
-		url.PathEscape(address),
-		200)
-	httpRes, err := c.HTTPClient.Get(uri)
-	if err != nil {
-		logger.Error(err, "Ripple: Failed to get transactions")
-		return nil, blockatlas.ErrSourceConn
+	query := url.Values{
+		"type":   {"Payment"},
+		"result": {"tesSUCCESS"},
+		"limit":  {"200"},
 	}
+	uri := fmt.Sprintf("accounts/%s/transactions", url.PathEscape(address))
 
 	var res Response
-	err = json.NewDecoder(httpRes.Body).Decode(&res)
-
-	if res.Result != "success" {
-		return nil, blockatlas.ErrSourceConn
+	err := c.Get(&res, uri, query)
+	if err != nil {
+		return nil, err
 	}
-
 	return res.Transactions, nil
 }
 
 func (c *Client) GetCurrentBlock() (int64, error) {
-	uri := fmt.Sprintf("%s/ledgers", c.BaseURL)
-
-	res, err := c.HTTPClient.Get(uri)
-	if err != nil {
-		return 0, err
-	}
-	defer res.Body.Close()
-
 	var ledgers LedgerResponse
-	err = json.NewDecoder(res.Body).Decode(&ledgers)
+	err := c.Get(&ledgers, "ledgers", nil)
 	if err != nil {
 		return 0, err
-	} else {
-		return ledgers.Ledger.LedgerIndex, nil
 	}
+	return ledgers.Ledger.LedgerIndex, nil
 }
 
 func (c *Client) GetBlockByNumber(num int64) ([]Tx, error) {
-	uri := fmt.Sprintf("%s/ledgers/%d?transactions=true&binary=false&expand=true&limit=1000", c.BaseURL, num)
+	query := url.Values{
+		"transactions": {"true"},
+		"binary":       {"false"},
+		"expand":       {"true"},
+		"limit":        {"100"},
+	}
+	uri := fmt.Sprintf("ledgers/%d", num)
 
-	res, err := c.HTTPClient.Get(uri)
+	var res LedgerResponse
+	err := c.Get(&res, uri, query)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
-
-	response := new(LedgerResponse)
-	err = json.NewDecoder(res.Body).Decode(response)
-	if err != nil {
-		return nil, err
-	}
-
-	return response.Ledger.Transactions, nil
+	return res.Ledger.Transactions, nil
 }

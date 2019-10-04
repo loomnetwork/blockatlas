@@ -1,6 +1,8 @@
 package vechain
 
-import "github.com/trustwallet/blockatlas"
+import (
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+)
 
 type TransferTx struct {
 	Transactions []Tx `json:"transactions"`
@@ -16,7 +18,7 @@ type TransferReceipt struct {
 	ID        string   `json:"id"`
 	Nonce     string   `json:"nonce"`
 	Origin    string   `json:"origin"`
-	Receipt   *Receipt  `json:"receipt"`
+	Receipt   *Receipt `json:"receipt"`
 	Timestamp uint64   `json:"timestamp"`
 }
 

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/trustwallet/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"github.com/trustwallet/blockatlas/pkg/logger"
 	"github.com/trustwallet/blockatlas/util"
 	"net/http"
@@ -21,7 +21,6 @@ import (
 var failedFlag int32 = 0
 var baseURL string
 var requireAll bool
-var coinFile string
 var concurrency int
 
 var app = cobra.Command{
@@ -35,7 +34,6 @@ var app = cobra.Command{
 func init() {
 	flags := app.Flags()
 	flags.BoolVarP(&requireAll, "all", "a", false, "Don't skip platforms not supported server-side")
-	flags.StringVar(&coinFile, "coins", "./coins.yml", "Path to coin list")
 	flags.IntVarP(&concurrency, "concurrency", "c", 8, "Tests to run at once")
 }
 
@@ -48,8 +46,6 @@ func main() {
 }
 
 func run(_ *cobra.Command, args []string) {
-	coin.Load(coinFile)
-
 	baseURL = args[0]
 
 	logrus.SetOutput(os.Stdout)

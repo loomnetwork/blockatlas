@@ -1,34 +1,20 @@
 package aion
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/trustwallet/blockatlas/pkg/logger"
-	"net/http"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"net/url"
 	"strconv"
 )
 
 type Client struct {
-	HTTPClient *http.Client
-	BaseURL    string
+	blockatlas.Request
 }
 
-func (c *Client) GetTxsOfAddress(address string, num int) (*TxPage, error) {
-	uri := fmt.Sprintf("%s/getTransactionsByAddress?%s",
-		c.BaseURL,
-		url.Values{
-			"accountAddress": {address},
-			"size":           {strconv.Itoa(num)},
-		}.Encode())
-
-	res, err := c.HTTPClient.Get(uri)
-	if err != nil {
-		logger.Error(err, "Aion: Failed to get transactions for address", logger.Params{"address": address})
+func (c *Client) GetTxsOfAddress(address string, num int) (txPage *TxPage, err error) {
+	query := url.Values{
+		"accountAddress": {address},
+		"size":           {strconv.Itoa(num)},
 	}
-	defer res.Body.Close()
-
-	txPage := new(TxPage)
-	err = json.NewDecoder(res.Body).Decode(txPage)
-	return txPage, err
+	err = c.Get(&txPage, "getTransactionsByAddress", query)
+	return
 }

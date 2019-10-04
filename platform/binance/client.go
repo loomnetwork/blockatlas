@@ -2,8 +2,8 @@ package binance
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/trustwallet/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/errors"
 	"github.com/trustwallet/blockatlas/pkg/logger"
 	"net/http"
 	"net/url"
@@ -13,26 +13,13 @@ import (
 // TODO Headers + rate limiting
 
 type Client struct {
-	Request    blockatlas.Request
-	BaseURL    string
-	BaseDexURL string
-}
-
-func ClientInit(baseUrl string, baseDexURL string) Client {
-	return Client{
-		Request: blockatlas.Request{
-			HttpClient:   http.DefaultClient,
-			ErrorHandler: getHTTPError,
-		},
-		BaseURL:    baseUrl,
-		BaseDexURL: baseDexURL,
-	}
+	blockatlas.Request
 }
 
 func (c *Client) GetBlockList(count int) (*BlockList, error) {
 	result := new(BlockList)
 	query := url.Values{"rows": {strconv.Itoa(count)}, "page": {"1"}}
-	err := c.Request.Get(result, c.BaseURL, "blocks", query)
+	err := c.Get(result, "blocks", query)
 	return result, err
 }
 
@@ -45,28 +32,15 @@ func (c *Client) GetBlockByNumber(num int64) (*TxPage, error) {
 		"rows": {"100"},
 		"page": {"1"},
 	}
-	err := c.Request.Get(stx, c.BaseURL, "txs", query)
+	err := c.Get(stx, "txs", query)
 	return stx, err
 }
 
 func (c *Client) GetTxsOfAddress(address string, token string) (*TxPage, error) {
 	stx := new(TxPage)
 	query := url.Values{"address": {address}, "rows": {"100"}, "page": {"1"}}
-	err := c.Request.Get(stx, c.BaseURL, "txs", query)
+	err := c.Get(stx, "txs", query)
 	return stx, err
-}
-
-func (c *Client) GetAccountMetadata(address string) (account *Account, err error) {
-	path := fmt.Sprintf("v1/account/%s", address)
-	err = c.Request.Get(&account, c.BaseDexURL, path, nil)
-	return account, err
-}
-
-func (c *Client) GetTokens() (*TokenPage, error) {
-	stp := new(TokenPage)
-	query := url.Values{"limit": {"1000"}, "offset": {"0"}}
-	err := c.Request.Get(stp, c.BaseDexURL, "v1/tokens", query)
-	return stp, err
 }
 
 func getHTTPError(res *http.Response, desc string) error {
@@ -78,7 +52,7 @@ func getHTTPError(res *http.Response, desc string) error {
 	case http.StatusOK:
 		return nil
 	default:
-		return fmt.Errorf("%s", res.Status)
+		return errors.E("getHTTPError error", errors.Params{"status": res.Status})
 	}
 }
 
@@ -86,6 +60,7 @@ func getAPIError(res *http.Response, desc string) error {
 	var sErr Error
 	err := json.NewDecoder(res.Body).Decode(&sErr)
 	if err != nil {
+		err = errors.E(err, errors.TypePlatformUnmarshal, errors.Params{"desc": desc})
 		logger.Error(err, "Binance: Failed to decode error response")
 		return blockatlas.ErrSourceConn
 	}
