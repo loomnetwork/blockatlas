@@ -1,13 +1,20 @@
+# Project variables.
 VERSION := $(shell git describe --tags)
 BUILD := $(shell git rev-parse --short HEAD)
 PROJECT_NAME := $(shell basename "$(PWD)")
 API_COMMAND := api
 OBSERVER_COMMAND := observer
+COIN_FILE := coin/coins.yml
+COIN_GO_FILE := coin/coins.go
+GEN_COIN_FILE := coin/gen.go
 
 # Go related variables.
 GOBASE := $(shell pwd)
 GOBIN := $(GOBASE)/bin
-GOPKG := $(cmd)
+GOPKG := $(.)
+
+# Environment variables
+TEST_CONFIG=$(GOBASE)/config.yml
 
 # Go files
 GOFMT_FILES?=$$(find . -name '*.go' | grep -v vendor)
@@ -76,14 +83,25 @@ clean:
 ## test: Run all unit tests.
 test: go-test
 
+## integration: Run all integration tests.
+integration: go-integration
+
 ## fmt: Run `go fmt` for all go files.
 fmt: go-fmt
+
+## gen-coins: Generate a new coin file.
+gen-coins: remove-coin-file go-gen-coins
+
+## remove-coin-file: Remove auto generated coin file.
+remove-coin-file:
+	@echo "  >  Removing "$(PROJECT_NAME)""
+	@-rm $(GOBASE)/$(COIN_GO_FILE)
 
 go-compile: go-get go-build
 
 go-build:
 	@echo "  >  Building binary..."
-	GOBIN=$(GOBIN) go build $(LDFLAGS) -o $(GOBIN)/$(PROJECT_NAME) -v ./cmd/
+	GOBIN=$(GOBIN) go build $(LDFLAGS) -o $(GOBIN)/$(PROJECT_NAME) -v .
 
 go-generate:
 	@echo "  >  Generating dependency files..."
@@ -101,12 +119,20 @@ go-clean:
 	GOBIN=$(GOBIN) go clean
 
 go-test:
-	@echo "  >  Cleaning build cache"
+	@echo "  >  Runing unit tests"
 	GOBIN=$(GOBIN) go test -v ./...
+
+go-integration:
+	@echo "  >  Runing integration tests"
+	GOBIN=$(GOBIN) TEST_CONFIG=$(TEST_CONFIG) go test -tags=integration -v ./pkg/integration
 
 go-fmt:
 	@echo "  >  Format all go files"
 	GOBIN=$(GOBIN) gofmt -w ${GOFMT_FILES}
+
+go-gen-coins:
+	@echo "  >  Generating coin file"
+	COIN_FILE=$(COIN_FILE) COIN_GO_FILE=$(COIN_GO_FILE) GOBIN=$(GOBIN) go run -tags=coins $(GEN_COIN_FILE)
 
 .PHONY: help
 all: help

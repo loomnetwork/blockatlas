@@ -2,9 +2,9 @@
 
 [![Build Status](https://dev.azure.com/TrustWallet/Trust%20BlockAtlas/_apis/build/status/TrustWallet.blockatlas?branchName=master)](https://dev.azure.com/TrustWallet/Trust%20BlockAtlas/_build/latest?definitionId=27&branchName=master)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/43834b0c94ad4f6088629aa3e3bb5e94)](https://www.codacy.com/app/TrustWallet/blockatlas?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=TrustWallet/blockatlas&amp;utm_campaign=Badge_Grade)
-[![Go Report Card](https://goreportcard.com/badge/TrustWallet/blockatlas)](https://goreportcard.com/report/TrustWallet/blockatlas)
+[![Go Report Card](https://goreportcard.com/badge/trustwallet/blockatlas)](https://goreportcard.com/report/TrustWallet/blockatlas)
 
-Clean explorer API for crypto currencies.
+Clean explorer API and events observer for crypto currencies.
 
 #### Supported Coins
 
@@ -36,17 +36,33 @@ Clean explorer API for crypto currencies.
 
 Deploy it in less than 30 seconds!
 
+### Prerequisite
+* [GO](https://golang.org/doc/install) `1.12+`
+* Locally running [Redis](https://redis.io/topics/quickstart) or url to remote instance (required for Observer only)
+
 #### From Source (Go Toolchain required)
 
 ```shell
 go get -u github.com/trustwallet/blockatlas
 cd blockatlas
-go build -o blockatlas ./cmd && ./blockatlas api --config=config.yml
+
+// Start API server
+go build -o blockatlas ./cmd && ./blockatlas api
+
+//Start Observer
+go build -o blockatlas ./cmd && ./blockatlas observer
 ```
 
-#### With Docker
+#### Docker
+
+Using Docker Hub:
 
 `docker run -it -p 8420:8420 trustwallet/blockatlas`
+
+Build and run from local Dockerfile:
+`docker build -t blockatlas .`
+`docker run -p 8420:8420 blockatlas`
+
 
 #### Tools
 
@@ -104,6 +120,191 @@ Example:
 ATLAS_NIMIQ_API=http://localhost:8648 \
 blockatlas
 ```
+
+
+## Docs
+
+Swagger API docs provided at path `/swagger/index.html`
+
+#### Updating Docs
+
+- After creating a new route, add comments to your API source code, [See Declarative Comments Format](https://swaggo.github.io/swaggo.io/declarative_comments_format/).
+- Download Swag for Go by using:
+
+    `$ go get -u github.com/swaggo/swag/cmd/swag`
+
+- Run the Swag in your Go project root folder.
+
+    `$ swag init`
+
+## Tests
+
+### Unit
+To run the unit tests: `make test`
+
+### Integration
+All integration tests are generated automatically. You only need to set the environment to your coin in the config file.
+The tests use a different build constraint, named `integration`.
+
+To run the integration tests: `make integration` 
+
+or you can run manually: `TEST_CONFIG=$(TEST_CONFIG) TEST_COINS=$(TEST_COINS) go test -tags=integration -v ./pkg/integration`
+
+##### Fixtures
+
+- If you need to change the parameters used in our tests, update the file `pkg/integration/testdata/fixtures.json`
+
+- To exclude an API from integration tests, you need to add the route inside the file `pkg/integration/testdata/exclude.json`
+
+    E.g.:
+```
+[
+  "/v2/ethereum/collections/:owner",
+  "/v2/ethereum/collections/:owner/collection/:collection_id"
+]
+```
+
+
+## Error
+Use the package `pkg/errors` for create a new error.
+An error in Go is any implementing interface with an Error() string method. We overwrite the error object by our error struct:
+
+```
+type Error struct {
+	Err   error
+	Type  Type
+	meta  map[string]interface{}
+	stack []string
+}
+```
+
+To be easier the error construction, the package provides a function named E, which is short and easy to type:
+
+`func E(args ...interface{}) *Error`
+
+E.g.:
+- just error:
+`errors.E(err)`
+
+- error with message:
+`errors.E(err, "new message to append")`
+
+- error with type:
+`errors.E(err, errors.TypePlatformReques)`
+
+- error with type and message:
+`errors.E(err, errors.TypePlatformReques, "new message to append")`
+
+- error with type and meta:
+```
+errors.E(err, errors.TypePlatformRequest, errors.Params{
+			"coin":   "Ethereum",
+			"method": "CurrentBlockNumber",
+		})
+```
+
+- error with meta:
+```
+errors.E(err, errors.Params{
+			"coin":   "Ethereum",
+			"method": "CurrentBlockNumber",
+		})
+```
+
+- error with type and meta:
+```
+errors.E(err, errors.TypePlatformRequest, errors.Params{
+			"coin":   "Ethereum",
+			"method": "CurrentBlockNumber",
+		})
+```
+
+- error with type, message and meta:
+```
+errors.E(err, errors.TypePlatformRequest, "new message to append", errors.Params{
+			"coin":   "Ethereum",
+			"method": "CurrentBlockNumber",
+		})
+```
+
+### Types
+
+```
+const (
+	TypeNone Type = iota
+	TypePlatformUnmarshal
+	TypePlatformNormalize
+	TypePlatformUnknown
+	TypePlatformRequest
+	TypePlatformClient
+	TypePlatformError
+	TypePlatformApi
+	TypeLoadConfig
+	TypeLoadCoins
+	TypeObserver
+	TypeStorage
+	TypeAssets
+	TypeUtil
+	TypeCmd
+	TypeUnknown
+)
+```
+
+
+## Logs
+Use the package `pkg/logger` for logs.
+
+E.g.:
+
+- Log message:
+`logger.Info("Loading Observer API")`
+
+- Log message with params:
+`logger.Info("Running application", logger.Params{"bind": bind})`
+
+- Fatal with error:
+`logger.Fatal("Application failed", err)`
+
+- The method parameters don't have a sort. You just need to pass them to the method:
+`logger.Fatal(err, "Application failed")`
+
+- Create a simple error log:
+`logger.Error(err)`
+
+- Create an error log with a message:
+`logger.Error("Failed to initialize API", err)`
+
+- Create an error log, with error, message, and params:
+```
+p := logger.Params{
+	"platform": handle,
+	"coin":     platform.Coin(),
+}
+err := platform.Init()
+if err != nil {
+	logger.Error("Failed to initialize API", err, p)
+}
+```
+
+- Debug log:
+`logger.Debug("Loading Observer API")`
+ or 
+`logger.Debug("Loading Observer API", logger.Params{"bind": bind})`
+
+- Warning log:
+`logger.Warn("Warning", err)`
+ or 
+`logger.Warn(err, "Warning")`
+ or 
+`logger.Warn("Warning", err, logger.Params{"bind": bind})`
+
+
+## Metrics
+
+The Blockatlas can collect and expose by `expvar's`, metrics about the application healthy and clients and server requests.
+Prometheus or another service can collect metrics provided from the `/metrics` endpoint.
+
+To protect the route, you can set the environment variables `METRICS_API_TOKEN`, and this route starts to require the auth bearer token. 
 
 ## Authors
 

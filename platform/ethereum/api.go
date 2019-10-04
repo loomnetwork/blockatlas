@@ -2,15 +2,19 @@ package ethereum
 
 import (
 	"fmt"
-	"github.com/trustwallet/blockatlas"
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/logger"
 	"math/big"
 	"net/http"
 	"strconv"
+)
 
-	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+var (
+	supportedTypes = map[string]bool{"ERC721": true, "ERC1155": true}
+	slugTokens     = map[string]bool{"ERC1155": true}
 )
 
 type Platform struct {
@@ -22,12 +26,15 @@ type Platform struct {
 func (p *Platform) Init() error {
 	handle := coin.Coins[p.CoinIndex].Handle
 
-	p.client.HTTPClient = http.DefaultClient
-	p.client.BaseURL = viper.GetString(fmt.Sprintf("%s.api", handle))
+	coinVar := fmt.Sprintf("%s.api", handle)
+	p.client = Client{blockatlas.InitClient(viper.GetString(coinVar))}
 
-	p.collectionsClient.HTTPClient = http.DefaultClient
-	p.collectionsClient.CollectionsURL = viper.GetString(fmt.Sprintf("%s.collections_api", handle))
-	p.collectionsClient.CollectionsApiKey = viper.GetString(fmt.Sprintf("%s.collections_api_key", handle))
+	collectionsApiVar := fmt.Sprintf("%s.collections_api", handle)
+	p.collectionsClient = CollectionsClient{blockatlas.InitClient(viper.GetString(collectionsApiVar))}
+
+	collectionsApiKeyVar := fmt.Sprintf("%s.collections_api_key", handle)
+	p.collectionsClient.Headers["X-API-KEY"] = viper.GetString(collectionsApiKeyVar)
+
 	return nil
 }
 
@@ -132,7 +139,7 @@ func AppendTxs(in []blockatlas.Tx, srcTx *Doc, coinIndex uint) (out []blockatlas
 	}
 	op := &srcTx.Ops[0]
 
-	if op.Type == blockatlas.TxTokenTransfer {
+	if op.Type == blockatlas.TxTokenTransfer && op.Contract != nil {
 		tokenTx := baseTx
 
 		tokenTx.Meta = blockatlas.TokenTransfer{
@@ -162,7 +169,7 @@ func calcFee(gasPrice string, gasUsed string) string {
 
 func apiError(c *gin.Context, err error) bool {
 	if err != nil {
-		logrus.WithError(err).Errorf("Unhandled error")
+		logger.Error(err, "Unhandled error")
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return true
 	}
@@ -209,48 +216,82 @@ func (p *Platform) GetCollectibles(owner, collectibleID string) (blockatlas.Coll
 
 func NormalizeCollectionPage(collections []Collection, coinIndex uint, owner string) (page blockatlas.CollectionPage) {
 	for _, collection := range collections {
+		if len(collection.Contracts) == 0 {
+			continue
+		}
 		item := NormalizeCollection(collection, coinIndex, owner)
+		if _, ok := supportedTypes[item.Type]; !ok {
+			continue
+		}
 		page = append(page, item)
 	}
 	return
 }
 
 func NormalizeCollection(c Collection, coinIndex uint, owner string) blockatlas.Collection {
+	if len(c.Contracts) == 0 {
+		return blockatlas.Collection{}
+	}
+
+	description := getValidParameter(c.Contracts[0].Description, c.Description)
+	symbol := getValidParameter(c.Contracts[0].Symbol, "")
+	collectionId := getValidParameter(c.Contracts[0].Address, "")
+	version := getValidParameter(c.Contracts[0].NftVersion, "")
+	collectionType := getValidParameter(c.Contracts[0].Type, "")
+	if _, ok := slugTokens[collectionType]; ok {
+		collectionId = createCollectionId(collectionId, c.Slug)
+	}
+
 	return blockatlas.Collection{
 		Name:            c.Name,
-		Symbol:          c.Contracts[0].Symbol,
+		Symbol:          symbol,
+		Slug:            c.Slug,
 		ImageUrl:        c.ImageUrl,
-		Description:     c.Contracts[0].Description,
+		Description:     description,
 		ExternalLink:    c.ExternalUrl,
-		Total:           c.Total,
-		CategoryAddress: c.Contracts[0].Address,
+		Total:           int(c.Total.Int64()),
+		Id:              collectionId,
+		CategoryAddress: collectionId,
 		Address:         owner,
-		Version:         c.Contracts[0].NftVersion,
+		Version:         version,
 		Coin:            coinIndex,
-		Type:            c.Contracts[0].Type,
+		Type:            collectionType,
 	}
 }
 
 func NormalizeCollectiblePage(c *Collection, srcPage []Collectible, coinIndex uint) (page blockatlas.CollectiblePage) {
+	if len(c.Contracts) == 0 {
+		return
+	}
 	for _, src := range srcPage {
 		item := NormalizeCollectible(c, src, coinIndex)
+		if _, ok := supportedTypes[item.Type]; !ok {
+			continue
+		}
 		page = append(page, item)
 	}
 	return
 }
 
 func NormalizeCollectible(c *Collection, a Collectible, coinIndex uint) blockatlas.Collectible {
+	address := getValidParameter(c.Contracts[0].Address, "")
+	collectionType := getValidParameter(c.Contracts[0].Type, "")
+	collectionID := address
+	if _, ok := slugTokens[collectionType]; ok {
+		collectionID = createCollectionId(address, c.Slug)
+	}
+	externalLink := getValidParameter(a.ExternalLink, a.AssetContract.ExternalLink)
 	return blockatlas.Collectible{
-		CollectionID:     c.Contracts[0].Address,
-		ContractAddress:  c.Contracts[0].Address,
+		CollectionID:     collectionID,
+		ContractAddress:  address,
 		TokenID:          a.TokenId,
 		CategoryContract: a.AssetContract.Address,
 		Name:             a.Name,
 		Category:         c.Name,
 		ImageUrl:         a.ImagePreviewUrl,
 		ProviderLink:     a.Permalink,
-		ExternalLink:     GetExternalLink(a),
-		Type:             "ERC721",
+		ExternalLink:     externalLink,
+		Type:             collectionType,
 		Description:      a.Description,
 		Coin:             coinIndex,
 	}
@@ -264,31 +305,23 @@ func (p *Platform) GetTokenListByAddress(address string) (blockatlas.TokenPage, 
 	return NormalizeTokens(account.Docs, *p), nil
 }
 
-func GetExternalLink(c Collectible) string {
-	if c.ExternalLink != "" {
-		return c.ExternalLink
-	} else if c.AssetContract.ExternalLink != "" {
-		return c.AssetContract.ExternalLink
-	} else {
-		return ""
-	}
-}
-
 // NormalizeToken converts a Ethereum token into the generic model
 func NormalizeToken(srcToken *Token, coinIndex uint) (t blockatlas.Token, ok bool) {
 	t = blockatlas.Token{
 		Name:     srcToken.Contract.Name,
 		Symbol:   srcToken.Contract.Symbol,
-		TokenId:  srcToken.Contract.Contract,
+		TokenID:  srcToken.Contract.Contract,
 		Coin:     coinIndex,
 		Decimals: srcToken.Contract.Decimals,
+		Type:     blockatlas.TokenTypeERC20,
 	}
 
 	return t, true
 }
 
 // NormalizeTxs converts multiple Ethereum tokens
-func NormalizeTokens(srcTokens []Token, p Platform) (tokenPage []blockatlas.Token) {
+func NormalizeTokens(srcTokens []Token, p Platform) []blockatlas.Token {
+	tokenPage := make([]blockatlas.Token, 0)
 	for _, srcToken := range srcTokens {
 		token, ok := NormalizeToken(&srcToken, p.CoinIndex)
 		if !ok {
@@ -296,5 +329,5 @@ func NormalizeTokens(srcTokens []Token, p Platform) (tokenPage []blockatlas.Toke
 		}
 		tokenPage = append(tokenPage, token)
 	}
-	return
+	return tokenPage
 }

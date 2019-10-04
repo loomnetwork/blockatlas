@@ -2,11 +2,16 @@ package platform
 
 import (
 	"fmt"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/logger"
+	"github.com/trustwallet/blockatlas/platform/algorand"
 
+<<<<<<< HEAD
 	"github.com/loomnetwork/blockatlas/platform/loom"
 	"github.com/sirupsen/logrus"
+=======
+>>>>>>> master
 	"github.com/spf13/viper"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
 	"github.com/trustwallet/blockatlas/platform/aeternity"
 	"github.com/trustwallet/blockatlas/platform/aion"
@@ -21,7 +26,6 @@ import (
 	"github.com/trustwallet/blockatlas/platform/nimiq"
 	"github.com/trustwallet/blockatlas/platform/ontology"
 	"github.com/trustwallet/blockatlas/platform/ripple"
-	"github.com/trustwallet/blockatlas/platform/semux"
 	"github.com/trustwallet/blockatlas/platform/stellar"
 	"github.com/trustwallet/blockatlas/platform/tezos"
 	"github.com/trustwallet/blockatlas/platform/theta"
@@ -51,7 +55,6 @@ var platformList = []blockatlas.Platform{
 	&icon.Platform{},
 	&iotex.Platform{},
 	&ontology.Platform{},
-	&semux.Platform{},
 	&theta.Platform{},
 	&tron.Platform{},
 	&vechain.Platform{},
@@ -73,7 +76,11 @@ var platformList = []blockatlas.Platform{
 	&bitcoin.Platform{CoinIndex: coin.DCR},
 	&nebulas.Platform{},
 	&fio.Platform{},
+<<<<<<< HEAD
 	&loom.Platform{},
+=======
+	&algorand.Platform{},
+>>>>>>> master
 }
 
 // Platforms contains all registered platforms by handle
@@ -105,18 +112,18 @@ func Init() {
 			continue
 		}
 
-		log := logrus.WithFields(logrus.Fields{
+		p := logger.Params{
 			"platform": handle,
 			"coin":     platform.Coin(),
-		})
+		}
 
 		if _, exists := Platforms[handle]; exists {
-			log.Fatal("Duplicate handle")
+			logger.Fatal("Duplicate handle", p)
 		}
 
 		err := platform.Init()
 		if err != nil {
-			log.WithError(err).Fatal("Failed to initialize API")
+			logger.Error("Failed to initialize API", err, p)
 		}
 
 		Platforms[handle] = platform

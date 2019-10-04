@@ -3,7 +3,7 @@ package binance
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/trustwallet/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -92,12 +92,7 @@ type test struct {
 	token       string
 }
 
-func initCoins() {
-	coin.Load("../../coins.yml")
-}
-
 func TestNormalizeTx(t *testing.T) {
-	initCoins()
 	testNormalizeTx(t, &test{
 		name:        "transfer",
 		apiResponse: nativeTransferTransaction,
@@ -176,8 +171,9 @@ var tokenDst = blockatlas.Token{
 	Name:     "Aeron",
 	Symbol:   "ARN",
 	Decimals: 8,
-	TokenId:  "ARN-71B",
+	TokenID:  "ARN-71B",
 	Coin:     coin.BNB,
+	Type:     blockatlas.TokenTypeBEP2,
 }
 
 type testToken struct {

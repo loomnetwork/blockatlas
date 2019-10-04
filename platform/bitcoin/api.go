@@ -2,15 +2,15 @@ package bitcoin
 
 import (
 	"fmt"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/logger"
 	"net/http"
 	"strconv"
 	"sync"
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
 	//"sync"
 )
@@ -24,13 +24,13 @@ func UtxoPlatform(index uint) *Platform {
 	platform := &Platform{CoinIndex: index}
 	err := platform.Init()
 	if err != nil {
-		logrus.Panicf("UtxoPlatform index %d error: %s", index, err)
+		logger.Panic("UtxoPlatform index error", err, logger.Params{"index": index})
 	}
 	return platform
 }
 
 func (p *Platform) Init() error {
-	p.client = InitClient(viper.GetString(p.ConfigKey()))
+	p.client = Client{blockatlas.InitClient(viper.GetString(p.ConfigKey()))}
 	return nil
 }
 
@@ -42,6 +42,16 @@ func (p *Platform) ConfigKey() string {
 	return fmt.Sprintf("%s.api", p.Coin().Handle)
 }
 
+// @Summary Get xpub transactions
+// @ID xpub
+// @Description Get transactions from xpub address
+// @Accept json
+// @Produce json
+// @Tags platform,tx
+// @Param coin path string true "the coin name" default(bitcoin)
+// @Param xpub path string true "the xpub address" default(zpub6ruK9k6YGm8BRHWvTiQcrEPnFkuRDJhR7mPYzV2LDvjpLa5CuGgrhCYVZjMGcLcFqv9b2WvsFtY2Gb3xq8NVq8qhk9veozrA2W9QaWtihrC)
+// @Success 200 {object} blockatlas.TxPage
+// @Router /v1/{coin}/xpub/{xpub} [get]
 func (p *Platform) RegisterRoutes(router gin.IRouter) {
 	router.GET("/xpub/:key", func(c *gin.Context) {
 		p.handleXpubRoute(c)

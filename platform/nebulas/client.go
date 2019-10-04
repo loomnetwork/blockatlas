@@ -1,10 +1,7 @@
 package nebulas
 
 import (
-	"fmt"
-	"github.com/sirupsen/logrus"
-	"github.com/trustwallet/blockatlas"
-	"net/http"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"net/url"
 	"strconv"
 )
@@ -12,22 +9,7 @@ import (
 const TxTypeBinary = "binary"
 
 type Client struct {
-	HTTPClient *http.Client
-	BaseURL    string
-	Request    blockatlas.Request
-	URL        string
-}
-
-func InitClient(BaseURL string) Client {
-	return Client{
-		Request: blockatlas.Request{
-			HttpClient: http.DefaultClient,
-			ErrorHandler: func(res *http.Response, uri string) error {
-				return nil
-			},
-		},
-		BaseURL: BaseURL,
-	}
+	blockatlas.Request
 }
 
 func (c *Client) GetTxs(address string, page int) ([]Transaction, error) {
@@ -40,15 +22,13 @@ func (c *Client) GetTxs(address string, page int) ([]Transaction, error) {
 }
 
 func (c *Client) GetLatestBlock() (int64, error) {
-	path := fmt.Sprintf("/block")
 	values := url.Values{
 		"type": {"newblock"},
 	}
 	var response NewBlockResponse
 
-	err := c.Request.Get(&response, c.BaseURL, path, values)
+	err := c.Get(&response, "block", values)
 	if err != nil || len(response.Data) == 0 {
-		logrus.Error("Error loading latest block height")
 		return 0, err
 	}
 
@@ -64,7 +44,7 @@ func (c *Client) GetBlockByNumber(num int64) ([]Transaction, error) {
 
 func (c *Client) GetTransactions(values url.Values) ([]Transaction, error) {
 	var response Response
-	err := c.Request.Get(&response, c.BaseURL, "tx", values)
+	err := c.Get(&response, "tx", values)
 	if err != nil {
 		return nil, err
 	}

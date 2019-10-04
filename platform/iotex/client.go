@@ -2,45 +2,34 @@ package iotex
 
 import (
 	"fmt"
-	"net/http"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/errors"
+	"github.com/trustwallet/blockatlas/pkg/logger"
 	"net/url"
 	"strconv"
-
-	"github.com/trustwallet/blockatlas"
-
-	"github.com/sirupsen/logrus"
 )
 
 type Client struct {
-	Request blockatlas.Request
-	URL     string
-}
-
-func InitClient(URL string) Client {
-	return Client{
-		Request: blockatlas.Request{
-			HttpClient: http.DefaultClient,
-			ErrorHandler: func(res *http.Response, uri string) error {
-				return nil
-			},
-		},
-		URL: URL,
-	}
+	blockatlas.Request
 }
 
 func (c *Client) GetLatestBlock() (int64, error) {
 	var chainMeta ChainMeta
-	err := c.Request.Get(&chainMeta, c.URL, "chainmeta", nil)
+	err := c.Get(&chainMeta, "chainmeta", nil)
 	if err != nil {
 		return 0, err
 	}
-	return strconv.ParseInt(chainMeta.Height, 10, 64)
+	b, err := strconv.ParseInt(chainMeta.Height, 10, 64)
+	if err != nil {
+		return 0, errors.E(err, "ParseInt failed", errors.TypePlatformUnmarshal)
+	}
+	return b, nil
 }
 
 func (c *Client) GetTxsInBlock(number int64) ([]*ActionInfo, error) {
 	path := fmt.Sprintf("transfers/block/%d", number)
 	var resp Response
-	err := c.Request.Get(&resp, c.URL, path, nil)
+	err := c.Get(&resp, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -49,13 +38,13 @@ func (c *Client) GetTxsInBlock(number int64) ([]*ActionInfo, error) {
 
 func (c *Client) GetTxsOfAddress(address string, start int64) (*Response, error) {
 	var response Response
-	err := c.Request.Get(&response, c.URL, "actions/addr/"+address, url.Values{
+	err := c.Get(&response, "actions/addr/"+address, url.Values{
 		"start": {strconv.FormatInt(start, 10)},
 		"count": {strconv.FormatInt(blockatlas.TxPerPage, 10)},
 	})
 
 	if err != nil {
-		logrus.WithError(err).Errorf("IOTEX: Failed to get transactions for address %s", address)
+		logger.Error(err, "IOTEX: Failed to get transactions for address", logger.Params{"address": address})
 		return nil, blockatlas.ErrSourceConn
 	}
 	return &response, err
@@ -63,11 +52,13 @@ func (c *Client) GetTxsOfAddress(address string, start int64) (*Response, error)
 
 func (c *Client) GetAddressTotalTransactions(address string) (int64, error) {
 	var account AccountInfo
-	err := c.Request.Get(&account, c.URL, "accounts/"+address, nil)
+	err := c.Get(&account, "accounts/"+address, nil)
+	if err != nil {
+		return 0, nil
+	}
 	numActions, err := strconv.ParseInt(account.AccountMeta.NumActions, 10, 64)
 	if err != nil {
 		return 0, nil
 	}
-
 	return numActions, nil
 }

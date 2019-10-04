@@ -2,42 +2,25 @@ package tezos
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"github.com/trustwallet/blockatlas"
-	"net/http"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"net/url"
 )
 
 type Client struct {
-	Request blockatlas.Request
-	URL     string
-	RpcURL  string
-}
-
-func InitClient(baseUrl string, RpcURL string) Client {
-	return Client{
-		URL:    baseUrl,
-		RpcURL: RpcURL,
-		Request: blockatlas.Request{
-			HttpClient: http.DefaultClient,
-			ErrorHandler: func(res *http.Response, uri string) error {
-				return nil
-			},
-		},
-	}
+	blockatlas.Request
 }
 
 func (c *Client) GetTxsOfAddress(address string) ([]Tx, error) {
 	var txs []Tx
 	path := fmt.Sprintf("operations/%s", address)
-	err := c.Request.Get(&txs, c.URL, path, url.Values{"type": {"Transaction"}})
+	err := c.Get(&txs, path, url.Values{"type": {"Transaction"}})
 
 	return txs, err
 }
 
 func (c *Client) GetCurrentBlock() (int64, error) {
 	var head Head
-	err := c.Request.Get(&head, c.URL, "head", nil)
+	err := c.Get(&head, "head", nil)
 
 	return head.Level, err
 }
@@ -45,7 +28,7 @@ func (c *Client) GetCurrentBlock() (int64, error) {
 func (c *Client) GetBlockHashByNumber(num int64) (string, error) {
 	var list []string
 	path := fmt.Sprintf("block_hash_level/%d", num)
-	err := c.Request.Get(&list, c.URL, path, nil)
+	err := c.Get(&list, path, nil)
 
 	if err != nil && len(list) != 0 {
 		return "", err
@@ -62,16 +45,7 @@ func (c *Client) GetBlockByNumber(num int64) ([]Tx, error) {
 	}
 
 	path := fmt.Sprintf("operations/%s", hash)
-	err = c.Request.Get(&list, c.URL, path, url.Values{"type": {"Transaction"}})
+	err = c.Get(&list, path, url.Values{"type": {"Transaction"}})
 
 	return list, err
-}
-
-func (c *Client) GetValidators() (validators []Validator, err error) {
-	err = c.Request.Get(&validators, c.RpcURL, "chains/main/blocks/head~32768/votes/listings", nil)
-	if err != nil {
-		logrus.WithError(err).Errorf("Tezos: Failed to get validators for address")
-		return validators, err
-	}
-	return validators, err
 }

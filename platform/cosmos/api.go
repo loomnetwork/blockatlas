@@ -1,14 +1,15 @@
 package cosmos
 
 import (
-	"github.com/trustwallet/blockatlas"
+	"github.com/spf13/viper"
+	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/logger"
+	services "github.com/trustwallet/blockatlas/services/assets"
+	"github.com/trustwallet/blockatlas/util"
 	"sort"
 	"strconv"
 	"time"
-
-	"github.com/spf13/viper"
-	"github.com/trustwallet/blockatlas/coin"
-	"github.com/trustwallet/blockatlas/util"
 )
 
 type Platform struct {
@@ -16,7 +17,7 @@ type Platform struct {
 }
 
 func (p *Platform) Init() error {
-	p.client = InitClient(viper.GetString("cosmos.api"))
+	p.client = Client{blockatlas.InitClient(viper.GetString("cosmos.api"))}
 	return nil
 }
 
@@ -51,36 +52,36 @@ func (p *Platform) GetTxsByAddress(address string) (blockatlas.TxPage, error) {
 		srcTxes = append(srcTxes, responseTxes...)
 	}
 
-	normalisedTxes := make([]blockatlas.Tx, 0)
+	normalisedTxs := make([]blockatlas.Tx, 0)
 
 	for _, srcTx := range srcTxes {
 		normalisedInputTx, ok := Normalize(&srcTx)
 		if ok {
-			normalisedTxes = append(normalisedTxes, normalisedInputTx)
+			normalisedTxs = append(normalisedTxs, normalisedInputTx)
 		}
 	}
 
-	sort.Slice(normalisedTxes, func(i, j int) bool {
-		return normalisedTxes[i].Date > normalisedTxes[j].Date
+	sort.Slice(normalisedTxs, func(i, j int) bool {
+		return normalisedTxs[i].Date > normalisedTxs[j].Date
 	})
 
-	return normalisedTxes, nil
+	return normalisedTxs, nil
 }
 
 func (p *Platform) GetValidators() (blockatlas.ValidatorPage, error) {
 	results := make(blockatlas.ValidatorPage, 0)
 	validators, err := p.client.GetValidators()
 	if err != nil {
-		return results, nil
+		return nil, err
 	}
 	pool, err := p.client.GetPool()
 	if err != nil {
-		return results, nil
+		return nil, err
 	}
 
 	inflation, err := p.client.GetInflation()
 	if err != nil {
-		return results, nil
+		return nil, err
 	}
 
 	for _, validator := range validators {
@@ -88,6 +89,72 @@ func (p *Platform) GetValidators() (blockatlas.ValidatorPage, error) {
 	}
 
 	return results, nil
+}
+
+func (p *Platform) GetDelegations(address string) (blockatlas.DelegationsPage, error) {
+	results := make(blockatlas.DelegationsPage, 0)
+	delegations, err := p.client.GetDelegations(address)
+	if err != nil {
+		return nil, err
+	}
+	unbondingDelegations, err := p.client.GetUnbondingDelegations(address)
+	if err != nil {
+		return nil, err
+	}
+	validatorList, err := services.GetValidators(p)
+	if err != nil {
+		return nil, err
+	}
+	validators := make(blockatlas.ValidatorMap)
+	for _, v := range validatorList {
+		validators[v.ID] = v
+	}
+	results = append(results, NormalizeDelegations(delegations, validators)...)
+	results = append(results, NormalizeUnbondingDelegations(unbondingDelegations, validators)...)
+
+	return results, nil
+}
+
+func NormalizeDelegations(delegations []Delegation, validators blockatlas.ValidatorMap) []blockatlas.Delegation {
+	results := make([]blockatlas.Delegation, 0)
+	for _, v := range delegations {
+		validator, ok := validators[v.ValidatorAddress]
+		if !ok {
+			logger.Error("Validator not found", validator)
+			continue
+		}
+		delegation := blockatlas.Delegation{
+			Delegator: validator,
+			Value:     v.Value(),
+			Status:    blockatlas.DelegationStatusActive,
+		}
+		results = append(results, delegation)
+	}
+	return results
+}
+
+func NormalizeUnbondingDelegations(delegations []UnbondingDelegation, validators blockatlas.ValidatorMap) []blockatlas.Delegation {
+	results := make([]blockatlas.Delegation, 0)
+	for _, v := range delegations {
+		for _, entry := range v.Entries {
+			validator, ok := validators[v.ValidatorAddress]
+			if !ok {
+				logger.Error("Validator not found", validator)
+				continue
+			}
+			t, _ := time.Parse(time.RFC3339, entry.CompletionTime)
+			delegation := blockatlas.Delegation{
+				Delegator: validator,
+				Value:     entry.Balance,
+				Status:    blockatlas.DelegationStatusPending,
+				Metadata: blockatlas.DelegationMetaDataPending{
+					AvailableDate: uint(t.Unix()),
+				},
+			}
+			results = append(results, delegation)
+		}
+	}
+	return results
 }
 
 // NormalizeTxs converts multiple Cosmos transactions
@@ -178,35 +245,31 @@ func fillDelegate(tx *blockatlas.Tx, delegate MessageValueDelegate, msgType stri
 }
 
 func normalizeValidator(v Validator, p StakingPool, inflation float64, c coin.Coin) (validator blockatlas.Validator) {
-
 	reward := CalculateAnnualReward(p, inflation, v)
-
 	return blockatlas.Validator{
-		Status: bool(v.Status == 2),
-		ID:     v.Address,
-		Reward: blockatlas.StakingReward{Annual: reward},
+		Status:        v.Status == 2,
+		ID:            v.Address,
+		Reward:        blockatlas.StakingReward{Annual: reward},
+		MinimumAmount: "0",
+		LockTime:      1814400,
 	}
 }
 
 func CalculateAnnualReward(p StakingPool, inflation float64, validator Validator) float64 {
-
-	notBondedTokens, err := strconv.ParseFloat(string(p.NotBondedTokens), 32)
-
+	notBondedTokens, err := strconv.ParseFloat(p.NotBondedTokens, 32)
 	if err != nil {
 		return 0
 	}
 
-	bondedTokens, err := strconv.ParseFloat(string(p.BondedTokens), 32)
+	bondedTokens, err := strconv.ParseFloat(p.BondedTokens, 32)
 	if err != nil {
 		return 0
 	}
 
-	commission, err := strconv.ParseFloat(string(validator.Commission.Rate), 32)
+	commission, err := strconv.ParseFloat(validator.Commission.Rate, 32)
 	if err != nil {
 		return 0
 	}
-
 	result := (notBondedTokens + bondedTokens) / bondedTokens * inflation
-
 	return (result - (result * commission)) * 100
 }

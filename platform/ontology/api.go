@@ -1,12 +1,11 @@
 package ontology
 
 import (
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/logger"
 	"github.com/trustwallet/blockatlas/util"
-	"net/http"
 	"strings"
 )
 
@@ -21,8 +20,7 @@ const (
 )
 
 func (p *Platform) Init() error {
-	p.client.BaseURL = viper.GetString("ontology.api")
-	p.client.HTTPClient = http.DefaultClient
+	p.client = Client{blockatlas.InitClient(viper.GetString("ontology.api"))}
 	return nil
 }
 
@@ -36,10 +34,13 @@ func (p *Platform) GetTxsByAddress(address string) (blockatlas.TxPage, error) {
 
 func (p *Platform) GetTokenTxsByAddress(address string, token string) (blockatlas.TxPage, error) {
 	txPage, err := p.client.GetTxsOfAddress(address, token)
-
 	if err != nil {
-		logrus.WithError(err).WithField("platform", "ontology").
-			Errorf("Failed to get txs for %s, token %s", address, token)
+		logger.Error(err, "Ontology: Failed to get transactions for address and token",
+			logger.Params{
+				"address": address,
+				"token":   token,
+			})
+		return blockatlas.TxPage{}, err
 	}
 
 	var txs []blockatlas.Tx

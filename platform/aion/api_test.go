@@ -3,8 +3,8 @@ package aion
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 )
 
@@ -41,7 +41,9 @@ var transferDst = blockatlas.Tx{
 	Block:  2880919,
 	Status: blockatlas.StatusCompleted,
 	Meta: blockatlas.Transfer{
-		Value: "11903810405853733000",
+		Value:    "11903810405853733000",
+		Symbol:   "AION",
+		Decimals: 18,
 	},
 }
 
@@ -69,6 +71,8 @@ func TestNormalize(t *testing.T) {
 	}
 
 	if !bytes.Equal(resJSON, dstJSON) {
+		println(string(resJSON))
+		println(string(dstJSON))
 		t.Error("tx don't equal")
 	}
 }

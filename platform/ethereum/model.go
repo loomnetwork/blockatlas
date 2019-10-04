@@ -1,5 +1,10 @@
 package ethereum
 
+import (
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"math/big"
+)
+
 type Page struct {
 	Total uint  `json:"total"`
 	Docs  []Doc `json:"docs"`
@@ -34,13 +39,13 @@ type Doc struct {
 }
 
 type Op struct {
-	TxID     string    `json:"transactionId"`
-	Contract *Contract `json:"contract"`
-	From     string    `json:"from"`
-	To       string    `json:"to"`
-	Type     string    `json:"type"`
-	Value    string    `json:"value"`
-	Coin     uint      `json:"coin"`
+	TxID     string                     `json:"transactionId"`
+	Contract *Contract                  `json:"contract"`
+	From     string                     `json:"from"`
+	To       string                     `json:"to"`
+	Type     blockatlas.TransactionType `json:"type"`
+	Value    string                     `json:"value"`
+	Coin     uint                       `json:"coin"`
 }
 
 type Contract struct {
@@ -59,8 +64,10 @@ type NodeInfo struct {
 type Collection struct {
 	Name        string                 `json:"name"`
 	ImageUrl    string                 `json:"image_url"`
+	Description string                 `json:"description"`
 	ExternalUrl string                 `json:"external_url"`
-	Total       int                    `json:"owned_asset_count"`
+	Slug        string                 `json:"slug"`
+	Total       *big.Int               `json:"owned_asset_count"`
 	Contracts   []PrimaryAssetContract `json:"primary_asset_contracts"`
 }
 
@@ -98,4 +105,5 @@ type CollectibleContract struct {
 	Address      string `json:"address"`
 	Category     string `json:"name"`
 	ExternalLink string `json:"external_link"`
+	Type         string `json:"schema_name"`
 }

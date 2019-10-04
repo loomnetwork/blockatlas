@@ -2,8 +2,8 @@ package observer
 
 import (
 	mapset "github.com/deckarep/golang-set"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"github.com/trustwallet/blockatlas/platform/bitcoin"
 )
 
@@ -31,6 +31,10 @@ func (o *Observer) run(events chan<- Event, blocks <-chan *blockatlas.Block) {
 
 func (o *Observer) processBlock(events chan<- Event, block *blockatlas.Block) {
 	txMap := GetTxs(block)
+	if len(txMap) == 0 {
+		return
+	}
+
 	// Build list of unique addresses
 	var addresses []string
 	for address := range txMap {
@@ -43,18 +47,21 @@ func (o *Observer) processBlock(events chan<- Event, block *blockatlas.Block) {
 	}
 
 	// Emit events
-	emitted := make(map[string]bool)
+	emittedUtxo := make(map[string]blockatlas.Direction)
 	platform := bitcoin.UtxoPlatform(o.Coin)
 	for _, sub := range subs {
+
 		txs := txMap[sub.Address].Txs()
 		for _, tx := range txs {
-			if _, ok := emitted[tx.ID]; ok {
-				continue
-			}
+
 			xpub, _ := o.Storage.GetXpubFromAddress(o.Coin, sub.Address)
-			if len(xpub) != 0 {
+			if len(xpub) > 0 {
+				xpubAddresses, err := o.Storage.GetAddressFromXpub(o.Coin, xpub)
+				if err != nil {
+					continue
+				}
 				addressSet := mapset.NewSet()
-				for _, addr := range tx.GetUtxoAddresses() {
+				for _, addr := range xpubAddresses {
 					addressSet.Add(addr)
 				}
 				direction := platform.InferDirection(&tx, addressSet)
@@ -66,8 +73,16 @@ func (o *Observer) processBlock(events chan<- Event, block *blockatlas.Block) {
 					Symbol:   coin.Coins[o.Coin].Symbol,
 					Decimals: coin.Coins[o.Coin].Decimals,
 				}
+
+				if d, ok := emittedUtxo[tx.ID]; ok {
+					if d == tx.Direction || d == blockatlas.DirectionSelf {
+						continue
+					}
+					emittedUtxo[tx.ID] = blockatlas.DirectionSelf
+				} else {
+					emittedUtxo[tx.ID] = tx.Direction
+				}
 			}
-			emitted[tx.ID] = true
 			events <- Event{
 				Subscription: sub,
 				Tx:           &tx,

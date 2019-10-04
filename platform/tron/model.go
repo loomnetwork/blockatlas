@@ -2,7 +2,7 @@ package tron
 
 import (
 	"encoding/json"
-	"github.com/trustwallet/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 )
 
 type Page struct {
@@ -12,15 +12,13 @@ type Page struct {
 }
 
 type Tx struct {
-	ID   string `json:"txID"`
-	Data TxData `json:"raw_data"`
+	ID        string `json:"txID"`
+	BlockTime int64  `json:"block_timestamp"`
+	Data      TxData `json:"raw_data"`
 }
 
 type TxData struct {
-	Contracts     []Contract `json:"contract"`
-	RefBlockBytes string     `json:"ref_block_bytes"`
-	RefBlockHash  string     `json:"ref_block_hash"`
-	Timestamp     int64      `json:"timestamp"`
+	Contracts []Contract `json:"contract"`
 }
 
 type Contract struct {
@@ -38,16 +36,38 @@ type TransferValue struct {
 	ToAddress    string            `json:"to_address"`
 }
 
+// Type for token transfer
+type TransferAssetContract struct {
+	Value TransferAssetValue `json:"value"`
+}
+
+type TransferAssetValue struct {
+	TransferValue
+	AssetName string `json:"asset_name"`
+}
+
 type Accounts struct {
-	Data []AccountsData `json:data`
+	Data []AccountsData `json:"data"`
 }
 
 type AccountsData struct {
 	AssetsV2 []AssetV2 `json:"assetV2"`
+	Votes    []Votes   `json:"votes"`
+	Frozen   []Frozen  `json:"frozen"`
 }
 
 type AssetV2 struct {
 	Key string `json:"key"`
+}
+
+type Votes struct {
+	VoteAddress string `json:"vote_address"`
+	VoteCount   int    `json:"vote_count"`
+}
+
+type Frozen struct {
+	ExpireTime    int64       `json:"expire_time"`
+	FrozenBalance interface{} `json:"frozen_balance,string"`
 }
 
 type Asset struct {
@@ -59,6 +79,19 @@ type AssetInfo struct {
 	Symbol   string `json:"abbr"`
 	ID       string `json:"id"`
 	Decimals uint   `json:"precision"`
+}
+
+type Validators struct {
+	Witnesses []Validator `json:"witnesses"`
+}
+
+type Validator struct {
+	Address string `json:"address"`
+}
+
+type VotesRequest struct {
+	Address string `json:"address"`
+	Visible bool   `json:"visible"`
 }
 
 func (c *Contract) UnmarshalJSON(buf []byte) error {
@@ -75,6 +108,10 @@ func (c *Contract) UnmarshalJSON(buf []byte) error {
 		var transfer TransferContract
 		err = json.Unmarshal(contractInternal.Parameter, &transfer)
 		c.Parameter = transfer
+	case "TransferAssetContract":
+		var tokenTransfer TransferAssetContract
+		err = json.Unmarshal(contractInternal.Parameter, &tokenTransfer)
+		c.Parameter = tokenTransfer
 	}
 	return err
 }

@@ -2,7 +2,7 @@ package iotex
 
 import (
 	"encoding/json"
-	"github.com/trustwallet/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -108,7 +108,9 @@ var expected = []*blockatlas.Tx{
 		Sequence: uint64(3),
 		Type:     blockatlas.TxTransfer,
 		Meta: blockatlas.Transfer{
-			Value: blockatlas.Amount("21000000000000000000"),
+			Value:    blockatlas.Amount("21000000000000000000"),
+			Symbol:   "IOTX",
+			Decimals: 18,
 		},
 	},
 	nil,

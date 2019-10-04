@@ -3,8 +3,8 @@ package tezos
 import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 )
 
@@ -30,7 +30,7 @@ const transferSrc = `
 				},
 				"failed": false,
 				"internal": false,
-				"burn": 0,
+				"burn": "0",
 				"counter": 11080,
 				"fee": 1420,
 				"gas_limit": "10300",
@@ -58,7 +58,9 @@ var transferDst = blockatlas.Tx{
 	Date:  1555102504,
 	Block: 393070,
 	Meta: blockatlas.Transfer{
-		Value: "2597000000",
+		Value:    "2597000000",
+		Decimals: 6,
+		Symbol:   "XTZ",
 	},
 }
 
@@ -88,14 +90,14 @@ func TestNormalize(t *testing.T) {
 func TestNormalizeValidator(t *testing.T) {
 	var v Validator
 	_ = json.Unmarshal([]byte(validatorSrc), &v)
-	coin := coin.Coin{}
 	expected := blockatlas.Validator{
-		Status: true,
-		ID:     v.Address,
-		Reward: blockatlas.StakingReward{Annual: Annual},
+		Status:        true,
+		ID:            v.Address,
+		Reward:        blockatlas.StakingReward{Annual: Annual},
+		MinimumAmount: blockatlas.Amount("0"),
 	}
 
-	result := normalizeValidator(v, coin)
+	result := normalizeValidator(v)
 
 	assert.Equal(t, result, expected)
 }

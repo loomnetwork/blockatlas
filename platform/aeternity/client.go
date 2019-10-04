@@ -1,42 +1,25 @@
 package aeternity
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"net/url"
+	"strconv"
 )
 
 type Client struct {
-	HTTPClient *http.Client
-	URL        string
+	blockatlas.Request
 }
 
-func (c *Client) GetTxs(address string, limit int) ([]Transaction, error) {
-	uri := fmt.Sprintf("%s/middleware/transactions/account/%s?limit=%d",
-		c.URL,
-		address,
-		limit)
-	res, err := http.Get(uri)
+func (c *Client) GetTxs(address string, limit int) (transactions []Transaction, err error) {
+	query := url.Values{
+		"limit": {strconv.Itoa(limit)},
+	}
+	uri := fmt.Sprintf("middleware/transactions/account/%s", address)
+
+	err = c.Get(&transactions, uri, query)
 	if err != nil {
-		return nil, err
-	}
-
-	defer res.Body.Close()
-
-	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("http %s", res.Status)
-	}
-
-	body, err := ioutil.ReadAll(res.Body)
-
-	var transactions []Transaction
-	decodeError := json.Unmarshal([]byte(string(body)), &transactions)
-	if decodeError != nil {
-		return nil, decodeError
-	}
-	if len(transactions) == 0 {
-		return make([]Transaction, 0), nil
+		return
 	}
 
 	var result []Transaction
@@ -45,6 +28,5 @@ func (c *Client) GetTxs(address string, limit int) ([]Transaction, error) {
 			result = append(result, tx)
 		}
 	}
-
-	return result, nil
+	return
 }

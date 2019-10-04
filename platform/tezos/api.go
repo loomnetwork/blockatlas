@@ -2,19 +2,21 @@ package tezos
 
 import (
 	"github.com/spf13/viper"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"time"
 )
 
 type Platform struct {
-	client Client
+	client    Client
+	rpcClient RpcClient
 }
 
 const Annual = 7.0
 
 func (p *Platform) Init() error {
-	p.client = InitClient(viper.GetString("tezos.api"), viper.GetString("tezos.rpc"))
+	p.client = Client{blockatlas.InitClient(viper.GetString("tezos.api"))}
+	p.rpcClient = RpcClient{blockatlas.InitClient(viper.GetString("tezos.rpc"))}
 	return nil
 }
 
@@ -49,6 +51,11 @@ func (p *Platform) GetBlockByNumber(num int64) (*blockatlas.Block, error) {
 	}
 }
 
+func (p *Platform) GetDelegations(address string) (page blockatlas.DelegationsPage, err error) {
+	//TODO https://github.com/trustwallet/blockatlas/issues/386
+	return page, err
+}
+
 func NormalizeTxs(srcTxs []Tx) (txs []blockatlas.Tx) {
 	for _, srcTx := range srcTxs {
 		tx, ok := Normalize(&srcTx)
@@ -62,27 +69,29 @@ func NormalizeTxs(srcTxs []Tx) (txs []blockatlas.Tx) {
 
 func (p *Platform) GetValidators() (blockatlas.ValidatorPage, error) {
 	results := make(blockatlas.ValidatorPage, 0)
-	validators, err := p.client.GetValidators()
+	validators, err := p.rpcClient.GetValidators()
 
 	if err != nil {
 		return results, err
 	}
 
 	for _, v := range validators {
-		results = append(results, normalizeValidator(v, p.Coin()))
+		results = append(results, normalizeValidator(v))
 	}
 
 	return results, nil
 }
 
-func normalizeValidator(v Validator, c coin.Coin) (validator blockatlas.Validator) {
+func normalizeValidator(v Validator) (validator blockatlas.Validator) {
 	// How to calculate Tezos APR? I have no idea. Tezos team does not know either. let's assume it's around 7% - no way to calculate in decentralized manner
 	// Delegation rewards distributed by the validators manually, it's up to them to do it.
 
 	return blockatlas.Validator{
-		Status: true,
-		ID:     v.Address,
-		Reward: blockatlas.StakingReward{Annual: Annual},
+		Status:        true,
+		ID:            v.Address,
+		Reward:        blockatlas.StakingReward{Annual: Annual},
+		MinimumAmount: blockatlas.Amount("0"),
+		LockTime:      0,
 	}
 }
 

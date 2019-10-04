@@ -2,8 +2,8 @@ package nimiq
 
 import (
 	"github.com/spf13/viper"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 )
 
 type Platform struct {
@@ -11,8 +11,7 @@ type Platform struct {
 }
 
 func (p *Platform) Init() error {
-	p.client.BaseURL = viper.GetString("nimiq.api")
-	p.client.Init()
+	p.client = Client{blockatlas.InitClient(viper.GetString("nimiq.api"))}
 	return nil
 }
 

@@ -3,8 +3,8 @@ package vechain
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 )
 
@@ -132,6 +132,7 @@ var expectedTransferTrx = blockatlas.Tx{
 	Meta: blockatlas.Transfer{
 		Value:    "770000000000000000000",
 		Decimals: 18,
+		Symbol:   "VET",
 	},
 }
 
@@ -183,8 +184,8 @@ func TestNormalizeTransfer(t *testing.T) {
 		}
 
 		var readyTx blockatlas.Tx
-		normTx, ok := NormalizeTransfer(&receipt, &clause)
-		if !ok {
+		normTx, err := NormalizeTransfer(&receipt, &clause)
+		if err != nil {
 			t.Fatal("VeChain: Can't normalize transfer", readyTx)
 		}
 		readyTx = normTx
@@ -232,8 +233,8 @@ func TestNormalizeTokenTransfer(t *testing.T) {
 		}
 
 		var readyTx blockatlas.Tx
-		normTx, ok := NormalizeTokenTransfer(&tt, &receipt)
-		if !ok {
+		normTx, err := NormalizeTokenTransfer(&tt, &receipt)
+		if err != nil {
 			t.Fatal("VeChain: Can't normalize token transfer", readyTx)
 		}
 		readyTx = normTx
@@ -274,7 +275,8 @@ func TestNormalizeTransaction(t *testing.T) {
 
 		var readyTxs []blockatlas.Tx
 
-		readyTxs = append(readyTxs, NormalizeTransaction(&transaction)...)
+		ntxs := NormalizeBlockTransactions(&transaction)
+		readyTxs = append(readyTxs, ntxs...)
 
 		actual, err := json.Marshal(&readyTxs)
 		if err != nil {

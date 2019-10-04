@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/trustwallet/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/logger"
 	"github.com/trustwallet/blockatlas/util"
 	"net/http"
 	"os"
@@ -20,7 +21,6 @@ import (
 var failedFlag int32 = 0
 var baseURL string
 var requireAll bool
-var coinFile string
 var concurrency int
 
 var app = cobra.Command{
@@ -34,7 +34,6 @@ var app = cobra.Command{
 func init() {
 	flags := app.Flags()
 	flags.BoolVarP(&requireAll, "all", "a", false, "Don't skip platforms not supported server-side")
-	flags.StringVar(&coinFile, "coins", "./coins.yml", "Path to coin list")
 	flags.IntVarP(&concurrency, "concurrency", "c", 8, "Tests to run at once")
 }
 
@@ -47,8 +46,6 @@ func main() {
 }
 
 func run(_ *cobra.Command, args []string) {
-	coin.Load(coinFile)
-
 	baseURL = args[0]
 
 	logrus.SetOutput(os.Stdout)
@@ -56,7 +53,7 @@ func run(_ *cobra.Command, args []string) {
 
 	supportedEndpoints, err := supportedEndpoints()
 	if err != nil {
-		logrus.WithError(err).Error("Failed to get supported platforms")
+		logger.Error(err, "Failed to get supported platforms")
 		os.Exit(1)
 	}
 
@@ -65,7 +62,7 @@ func run(_ *cobra.Command, args []string) {
 		supported[ns] = true
 	}
 
-	logrus.Infof("Running test with %d goroutines", concurrency)
+	logger.Info("Running goroutines tests", logger.Params{"goroutines": concurrency})
 
 	var wg sync.WaitGroup
 	sem := util.NewSemaphore(concurrency)
@@ -84,8 +81,7 @@ func run(_ *cobra.Command, args []string) {
 		}
 		tests = append(tests, c)
 	}
-
-	logrus.Infof("%d platforms to test", len(supportedEndpoints))
+	logger.Info("Platforms to test", logger.Params{"count": len(supportedEndpoints)})
 
 	wg.Add(len(tests))
 	for _, c := range tests {
@@ -96,9 +92,9 @@ func run(_ *cobra.Command, args []string) {
 
 	failed := atomic.LoadInt32(&failedFlag)
 	if failed == 1 {
-		logrus.Fatal("Test failed")
+		logger.Fatal("Test failed")
 	} else {
-		logrus.Info("Test passed")
+		logger.Info("Test passed")
 	}
 }
 

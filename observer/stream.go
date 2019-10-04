@@ -4,7 +4,8 @@ import (
 	"context"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/trustwallet/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/logger"
 	"github.com/trustwallet/blockatlas/util"
 	"sync"
 	"sync/atomic"
@@ -31,7 +32,7 @@ func (s *Stream) Execute(ctx context.Context) <-chan *blockatlas.Block {
 	s.log = logrus.WithField("platform", cn.Handle)
 	conns := viper.GetInt("observer.stream_conns")
 	if conns == 0 {
-		logrus.Fatal("observer.stream_conns is 0")
+		logger.Fatal("observer.stream_conns is 0")
 	}
 	s.semaphore = util.NewSemaphore(conns)
 	c := make(chan *blockatlas.Block)
@@ -61,6 +62,7 @@ func (s *Stream) load(c chan<- *blockatlas.Block) {
 	}
 
 	height, err := s.BlockAPI.CurrentBlockNumber()
+	height -= s.BlockAPI.Coin().MinConfirmations
 	if err != nil {
 		s.log.WithError(err).Error("Polling failed: source didn't return chain head number")
 		return
@@ -87,7 +89,7 @@ func (s *Stream) loadBlock(c chan<- *blockatlas.Block, num int64) {
 	s.semaphore.Acquire()
 	defer s.semaphore.Release()
 
-	block, err := s.BlockAPI.GetBlockByNumber(num)
+	block, err := retry(5, time.Second*5, s.BlockAPI.GetBlockByNumber, num, s.log)
 	if err != nil {
 		s.log.WithError(err).Errorf("Polling failed: could not get block %d", num)
 		return

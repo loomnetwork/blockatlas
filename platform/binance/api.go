@@ -1,8 +1,8 @@
 package binance
 
 import (
-	"fmt"
-	"github.com/trustwallet/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/errors"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -16,11 +16,16 @@ const (
 )
 
 type Platform struct {
-	client Client
+	client    Client
+	dexClient DexClient
 }
 
 func (p *Platform) Init() error {
-	p.client = ClientInit(viper.GetString("binance.api"), viper.GetString("binance.dex"))
+	p.client = Client{blockatlas.InitClient(viper.GetString("binance.api"))}
+	p.client.ErrorHandler = getHTTPError
+
+	p.dexClient = DexClient{blockatlas.InitClient(viper.GetString("binance.dex"))}
+	p.dexClient.ErrorHandler = getHTTPError
 	return nil
 }
 
@@ -37,7 +42,7 @@ func (p *Platform) CurrentBlockNumber() (int64, error) {
 		return 0, err
 	}
 	if len(list.BlockArray) == 0 {
-		return 0, fmt.Errorf("no block descriptor found")
+		return 0, errors.E("no block descriptor found", errors.TypePlatformApi)
 	}
 	return list.BlockArray[0].BlockHeight, nil
 }
@@ -137,11 +142,11 @@ func NormalizeTxs(srcTxs []Tx, txType string, pageSize int) (txs []blockatlas.Tx
 }
 
 func (p *Platform) GetTokenListByAddress(address string) (blockatlas.TokenPage, error) {
-	account, err := p.client.GetAccountMetadata(address)
+	account, err := p.dexClient.GetAccountMetadata(address)
 	if err != nil || len(account.Balances) == 0 {
 		return []blockatlas.Token{}, nil
 	}
-	tokens, err := p.client.GetTokens()
+	tokens, err := p.dexClient.GetTokens()
 	if err != nil {
 		return nil, err
 	}
@@ -158,9 +163,10 @@ func NormalizeToken(srcToken *Balance, tokens *TokenPage) (t blockatlas.Token, o
 	t = blockatlas.Token{
 		Name:     tk.Name,
 		Symbol:   tk.OriginalSymbol,
-		TokenId:  tk.Symbol,
+		TokenID:  tk.Symbol,
 		Coin:     coin.BNB,
 		Decimals: uint(decimalPlaces(tk.TotalSupply)),
+		Type:     blockatlas.TokenTypeBEP2,
 	}
 
 	return t, true

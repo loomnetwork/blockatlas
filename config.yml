@@ -6,12 +6,18 @@ gin:
   # If set, HTTP Forwarded headers will be respected
   reverse_proxy: false
 
+#metrics:
+#  api_token: xxxxxx
+
+# Sentry error tracking
+#sentry:
+#  dsn: https://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx@sentry.io/xxxxxxx
+
 # The transaction watcher
 observer:
   enabled: false
-
-  # Required auth token
-  #auth: changeMe!!!
+  # TODO : Add description
+  auth: test
   # Redis Subscription Database
   redis: redis://localhost:6379
   # Smallest possible block polling interval
@@ -94,7 +100,7 @@ icon:
 
 # [TRX] Tron: https://tron.network/
 tron:
-  api: https://api.trongrid.io/v1
+  api: https://api.trongrid.io
 
 # [VET] VeChain: https://www.vechain.org
 vechain:
@@ -182,5 +188,8 @@ decred:
   api: https://blockbook.decred.org:9161/api
 
 #[LOOM]
-  loom:
-    rpc: http://localhost:46658/tw
+loom:
+  rpc: http://localhost:46658/tw
+  
+algorand:
+  api: https://algorand.node

@@ -3,8 +3,8 @@ package ontology
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 )
 
@@ -39,7 +39,9 @@ var dstOntTransfer = blockatlas.Tx{
 	Status: blockatlas.StatusCompleted,
 	Block:  3411115,
 	Meta: blockatlas.Transfer{
-		Value: "2",
+		Value:    "2",
+		Symbol:   "ONT",
+		Decimals: 0,
 	},
 }
 
@@ -168,6 +170,8 @@ func TestNormalize(t *testing.T) {
 		}
 
 		if !bytes.Equal(actual, expected) {
+			println(string(actual))
+			println(string(expected))
 			t.Error("Transactions not equal")
 		}
 	}

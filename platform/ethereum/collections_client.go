@@ -1,40 +1,23 @@
 package ethereum
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"net/http"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
+	"github.com/trustwallet/blockatlas/pkg/errors"
 	"net/url"
 	"strconv"
-	"strings"
 )
 
 type CollectionsClient struct {
-	HTTPClient        *http.Client
-	CollectionsURL    string
-	CollectionsApiKey string
+	blockatlas.Request
 }
 
-func (c CollectionsClient) GetCollections(owner string) ([]Collection, error) {
-	uri := fmt.Sprintf("%s/api/v1/collections?%s",
-		c.CollectionsURL,
-		url.Values{
-			"asset_owner": {owner},
-			"limit":       {strconv.Itoa(1000)},
-		}.Encode())
-
-	req, _ := http.NewRequest("GET", uri, nil)
-	req.Header.Set("X-API-KEY", c.CollectionsApiKey)
-	res, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return nil, err
+func (c CollectionsClient) GetCollections(owner string) (page []Collection, err error) {
+	query := url.Values{
+		"asset_owner": {owner},
+		"limit":       {"1000"},
 	}
-	defer res.Body.Close()
-
-	var page []Collection
-	err = json.NewDecoder(res.Body).Decode(&page)
-	return page, err
+	err = c.Get(&page, "api/v1/collections", query)
+	return
 }
 
 func (c CollectionsClient) GetCollectibles(owner string, collectibleID string) (*Collection, []Collectible, error) {
@@ -42,42 +25,27 @@ func (c CollectionsClient) GetCollectibles(owner string, collectibleID string) (
 	if err != nil {
 		return nil, nil, err
 	}
-	collection := searchCollection(&collections, collectibleID)
+	id := getCollectionId(collectibleID)
+	collection := searchCollection(collections, id)
 	if collection == nil {
-		return nil, nil, errors.New(fmt.Sprintf("%s not found", collectibleID))
+		return nil, nil, errors.E("collectible not found", errors.TypePlatformClient,
+			errors.Params{"collectibleID": collectibleID})
 	}
 
-	uriValues := url.Values{
+	query := url.Values{
 		"owner": {owner},
 		"limit": {strconv.Itoa(300)},
 	}
-	for _, i := range collection.Contracts {
-		uriValues.Add("asset_contract_addresses", i.Address)
-	}
-	uri := fmt.Sprintf("%s/api/v1/assets/?%s",
-		c.CollectionsURL,
-		uriValues.Encode())
 
-	req, _ := http.NewRequest("GET", uri, nil)
-	req.Header.Set("X-API-KEY", c.CollectionsApiKey)
-	res, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return nil, nil, err
+	for _, i := range collection.Contracts {
+		if _, ok := slugTokens[i.Type]; ok {
+			query.Set("collection", collection.Slug)
+			break
+		}
+		query.Add("asset_contract_addresses", i.Address)
 	}
-	defer res.Body.Close()
 
 	var page CollectiblePage
-	err = json.NewDecoder(res.Body).Decode(&page)
+	err = c.Get(&page, "api/v1/assets", query)
 	return collection, page.Collectibles, err
-}
-
-func searchCollection(collections *[]Collection, collectibleID string) *Collection {
-	for _, i := range *collections {
-		for _, contract := range i.Contracts {
-			if strings.EqualFold(contract.Address, collectibleID) {
-				return &i
-			}
-		}
-	}
-	return nil
 }

@@ -3,8 +3,8 @@ package icon
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/trustwallet/blockatlas"
 	"github.com/trustwallet/blockatlas/coin"
+	"github.com/trustwallet/blockatlas/pkg/blockatlas"
 	"testing"
 )
 
@@ -34,7 +34,9 @@ var basicDst = blockatlas.Tx{
 	Date:  1555396594,
 	Block: 357832,
 	Meta: blockatlas.Transfer{
-		Value: "3470000000000000",
+		Value:    "3470000000000000",
+		Symbol:   "ICX",
+		Decimals: 18,
 	},
 }
 
